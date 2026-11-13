@@ -1337,6 +1337,19 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
       await _showDetails(entity);
       return;
     }
+    if (!await entity.exists()) {
+      _message('This media file is no longer available. Refresh the folder and try again.');
+      return;
+    }
+    try {
+      if (await entity.length() == 0) {
+        _message('This media file is empty and cannot be played.');
+        return;
+      }
+    } catch (e) {
+      _message('Cannot read this media file: $e');
+      return;
+    }
     final ext = _extensionOf(entity);
     const images = <String>{'jpg','jpeg','png','gif','webp','bmp','heic','heif','tif','tiff'};
     if (images.contains(ext)) {
@@ -1550,7 +1563,7 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
         ),
       );
     } catch (e) {
-      _message('Audio playback failed: $e');
+      await _openMediaFallback(file, mediaType: 'audio', error: e);
     }
   }
 
@@ -1672,9 +1685,32 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
         ),
       );
     } catch (e) {
-      _message('Video playback failed: $e');
+      await _openMediaFallback(file, mediaType: 'video', error: e);
     } finally {
       await controller.dispose();
+    }
+  }
+
+  Future<void> _openMediaFallback(
+    File file, {
+    required String mediaType,
+    required Object error,
+  }) async {
+    if (!mounted) return;
+    _message('Built-in $mediaType player could not play this format. Trying an installed media player…');
+    try {
+      final result = await OpenFilex.open(file.path);
+      if (!mounted) return;
+      if (result.type != ResultType.done) {
+        _message(
+          'No compatible app could open this $mediaType file. '
+          'The built-in player reported: $error',
+        );
+      }
+    } catch (fallbackError) {
+      if (mounted) {
+        _message('Could not open this $mediaType file: $fallbackError');
+      }
     }
   }
 
