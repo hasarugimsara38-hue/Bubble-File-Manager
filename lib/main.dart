@@ -1120,36 +1120,65 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
   }
 
   bool _isFreehandBox(List<Offset> points) {
-    if (points.length < 12) return false;
+    // Accept a hand-drawn, roughly closed quadrilateral. It does not need
+    // to be square, straight, evenly sized, or perfectly aligned.
+    if (points.length < 8) return false;
+
     var minX = double.infinity, minY = double.infinity;
     var maxX = -double.infinity, maxY = -double.infinity;
     var pathLength = 0.0;
+    var sumX = 0.0, sumY = 0.0;
+
     for (var i = 0; i < points.length; i++) {
       final p = points[i];
       minX = math.min(minX, p.dx);
       minY = math.min(minY, p.dy);
       maxX = math.max(maxX, p.dx);
       maxY = math.max(maxY, p.dy);
+      sumX += p.dx;
+      sumY += p.dy;
       if (i > 0) pathLength += (p - points[i - 1]).distance;
     }
+
     final width = maxX - minX;
     final height = maxY - minY;
     final side = math.max(width, height);
-    if (math.min(width, height) < 56 || side == 0) return false;
-    final ratio = width / height;
-    if (ratio < .62 || ratio > 1.6) return false;
-    final startGap = (points.first - points.last).distance;
-    if (startGap > math.max(30.0, side * .28)) return false;
-    if (pathLength < (width + height) * 1.25) return false;
+    if (math.min(width, height) < 42 || side == 0) return false;
 
-    final cornerRadius = side * .38;
-    final corners = <Offset>[
-      Offset(minX, minY), Offset(maxX, minY),
-      Offset(maxX, maxY), Offset(minX, maxY),
-    ];
-    for (final corner in corners) {
-      if (!points.any((p) => (p - corner).distance <= cornerRadius)) return false;
+    // Allow tall/wide and slightly skewed shapes, not just near-squares.
+    final ratio = width / height;
+    if (ratio < .38 || ratio > 2.6) return false;
+
+    // A small opening at the end is normal when drawing by hand.
+    final startGap = (points.first - points.last).distance;
+    if (startGap > math.max(48.0, side * .42)) return false;
+    if (pathLength < (width + height) * 1.05) return false;
+
+    // The path must meaningfully surround an area rather than being a
+    // straight line or a simple back-and-forth stroke.
+    final center = Offset(sumX / points.length, sumY / points.length);
+    var hasTopLeft = false, hasTopRight = false;
+    var hasBottomLeft = false, hasBottomRight = false;
+    for (final p in points) {
+      if (p.dx <= center.dx && p.dy <= center.dy) hasTopLeft = true;
+      if (p.dx >= center.dx && p.dy <= center.dy) hasTopRight = true;
+      if (p.dx >= center.dx && p.dy >= center.dy) hasBottomRight = true;
+      if (p.dx <= center.dx && p.dy >= center.dy) hasBottomLeft = true;
     }
+    if (!(hasTopLeft && hasTopRight && hasBottomRight && hasBottomLeft)) {
+      return false;
+    }
+
+    // Approximate enclosed-area check, tolerant of uneven corners.
+    var twiceArea = 0.0;
+    for (var i = 0; i < points.length; i++) {
+      final a = points[i];
+      final b = points[(i + 1) % points.length];
+      twiceArea += a.dx * b.dy - b.dx * a.dy;
+    }
+    final boxArea = width * height;
+    if (boxArea == 0 || twiceArea.abs() / 2 < boxArea * .16) return false;
+
     return true;
   }
 
