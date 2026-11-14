@@ -1158,27 +1158,34 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
     // Require enough movement to rule out a simple tap or short line.
     if (pathLength < (width + height) * .85) return false;
 
-    // A roughly four-sided loop should pass through all four broad regions
-    // around its centre. This also accepts diamonds and skewed rectangles.
-    final centerX = (minX + maxX) / 2;
-    final centerY = (minY + maxY) / 2;
-    final insetX = width * .08;
-    final insetY = height * .08;
-    final quadrants = <bool>[false, false, false, false];
-
+    // Measure coverage around the centre rather than the bounding-box
+    // quadrants. This correctly accepts diamonds, tilted boxes and skewed
+    // quadrilaterals whose corners may sit at the middle of each bounding edge.
+    final center = Offset((minX + maxX) / 2, (minY + maxY) / 2);
+    const twoPi = math.pi * 2;
+    final sectors = <bool>[false, false, false, false];
     for (final point in points) {
-      if (point.dx < centerX - insetX && point.dy < centerY - insetY) {
-        quadrants[0] = true; // upper-left
-      } else if (point.dx > centerX + insetX && point.dy < centerY - insetY) {
-        quadrants[1] = true; // upper-right
-      } else if (point.dx > centerX + insetX && point.dy > centerY + insetY) {
-        quadrants[2] = true; // lower-right
-      } else if (point.dx < centerX - insetX && point.dy > centerY + insetY) {
-        quadrants[3] = true; // lower-left
+      final delta = point - center;
+      if (delta.distance < side * .18) continue;
+      var angle = math.atan2(delta.dy, delta.dx);
+      if (angle < 0) angle += twoPi;
+
+      // Four broad 110-degree sectors centred on right, bottom, left and top.
+      if (angle <= math.pi / 2 || angle >= twoPi - math.pi / 4) {
+        sectors[0] = true; // right
+      }
+      if (angle >= math.pi / 4 && angle <= math.pi * 3 / 4) {
+        sectors[1] = true; // bottom
+      }
+      if (angle >= math.pi * 3 / 4 && angle <= math.pi * 5 / 4) {
+        sectors[2] = true; // left
+      }
+      if (angle >= math.pi * 5 / 4 && angle <= math.pi * 7 / 4) {
+        sectors[3] = true; // top
       }
     }
 
-    return quadrants.every((visited) => visited);
+    return sectors.every((visited) => visited);
   }
 
   Future<void> _createFolder() async {
