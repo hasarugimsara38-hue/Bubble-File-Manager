@@ -51,7 +51,7 @@ void main() {
 
     await tester.tap(find.text('Special features'));
     await tester.pump(const Duration(seconds: 3));
-    expect(find.text('Yunadie'), findsOneWidget);
+    expect(find.text('Yunadie'), findsNWidgets(2));
     expect(find.text('Secret Vault'), findsOneWidget);
     expect(find.text('Face Albums'), findsOneWidget);
 
