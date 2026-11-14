@@ -713,7 +713,6 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
   }
 
   Future<void> _restoreRecycleRecord(Map<String, dynamic> record) async {
-    String? destination;
     try {
       final sourcePath = record['storedPath'];
       final originalPath = record['originalPath'];
@@ -724,7 +723,7 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
         throw StateError('The Recycle Bin record is invalid or unsafe.');
       }
 
-      destination = originalPath;
+      var destination = originalPath;
       final parent = Directory(File(destination).parent.path);
       await parent.create(recursive: true);
       if (await FileSystemEntity.type(destination, followLinks: false) !=
@@ -2763,10 +2762,10 @@ class _BubbleFieldState extends State<BubbleField> with SingleTickerProviderStat
       final bottom = math.max(b.r, _size.height - b.r);
       if (b.y < top) {
         b.y = top;
-        b.vy = math.max(.55, b.vy.abs() * .78);
+        b.vy = math.max(.55, b.vy.abs() * .78).toDouble();
       } else if (b.y > bottom) {
         b.y = bottom;
-        b.vy = -math.max(.55, b.vy.abs() * .78);
+        b.vy = -math.max(.55, b.vy.abs() * .78).toDouble();
       }
     }
 
