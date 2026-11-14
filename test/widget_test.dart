@@ -18,6 +18,7 @@ void main() {
     expect(find.text('My Files'), findsOneWidget);
     expect(find.text('Categories'), findsOneWidget);
 
+    await tester.ensureVisible(find.text('AI Assistant'));
     await tester.tap(find.text('AI Assistant'));
     await tester.pumpAndSettle();
     expect(find.text('Aqua Assistant'), findsOneWidget);
