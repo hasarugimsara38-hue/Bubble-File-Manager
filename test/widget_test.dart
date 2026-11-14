@@ -18,6 +18,11 @@ void main() {
 
     expect(find.text('My Files'), findsOneWidget);
     expect(find.text('HASARU & YUNADIE'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('Categories'),
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('Categories'), findsOneWidget);
 
     await tester.scrollUntilVisible(
