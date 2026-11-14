@@ -21,14 +21,20 @@ void main() {
     await tester.scrollUntilVisible(
       find.text('Categories'),
       250,
-      scrollable: find.byType(Scrollable).first,
+      scrollable: find.descendant(
+        of: find.byKey(const ValueKey<String>('homeList')),
+        matching: find.byType(Scrollable),
+      ).first,
     );
     expect(find.text('Categories'), findsOneWidget);
 
     await tester.scrollUntilVisible(
       find.text('AI Assistant'),
       250,
-      scrollable: find.byType(Scrollable).first,
+      scrollable: find.descendant(
+        of: find.byKey(const ValueKey<String>('homeList')),
+        matching: find.byType(Scrollable),
+      ).first,
     );
     await tester.tap(find.text('AI Assistant'));
     await tester.pump(const Duration(milliseconds: 350));
