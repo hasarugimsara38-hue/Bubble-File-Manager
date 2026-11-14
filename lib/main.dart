@@ -1971,6 +1971,7 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
 
 
   Widget _home(Color foreground) => ListView(
+    key: const ValueKey<String>('homeList'),
     padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
     children: [
       Text('My Files', style: TextStyle(fontSize: 30, fontWeight: FontWeight.w800, color: foreground)),
