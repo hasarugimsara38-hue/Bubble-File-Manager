@@ -39,27 +39,66 @@ jobs:
           data = data[:start] + tag + data[end + 1:]
           path.write_text(data, encoding="utf-8")
           PY
-      - name: Add Android storage permissions
+      - name: Add Android storage and media permissions
         run: |
           python3 - <<'PY'
           from pathlib import Path
+          import re
+
           path = Path("android/app/src/main/AndroidManifest.xml")
-          data = path.read_text()
-          permissions = """    <uses-permission android:name="android.permission.INTERNET" />
-            <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
-              <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
-              <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29" />
-              <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
-              <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
-              <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
-              <uses-permission android:name="android.permission.READ_MEDIA_VISUAL_USER_SELECTED" />
-              <uses-permission android:name="android.permission.ACCESS_MEDIA_LOCATION" />
-              <uses-permission android:name="android.permission.USE_BIOMETRIC" />
-              <uses-permission android:name="android.permission.USE_FINGERPRINT" />
-          """
-          if "android.permission.MANAGE_EXTERNAL_STORAGE" not in data:
-              data = data.replace("<application", permissions + "    <application", 1)
-              path.write_text(data)
+          data = path.read_text(encoding="utf-8")
+          required = [
+              ('android.permission.INTERNET', ''),
+              ('android.permission.MANAGE_EXTERNAL_STORAGE', ''),
+              ('android.permission.READ_EXTERNAL_STORAGE', ' android:maxSdkVersion="32"'),
+              ('android.permission.WRITE_EXTERNAL_STORAGE', ' android:maxSdkVersion="29"'),
+              ('android.permission.READ_MEDIA_IMAGES', ''),
+              ('android.permission.READ_MEDIA_VIDEO', ''),
+              ('android.permission.READ_MEDIA_AUDIO', ''),
+              ('android.permission.READ_MEDIA_VISUAL_USER_SELECTED', ''),
+              ('android.permission.ACCESS_MEDIA_LOCATION', ''),
+              ('android.permission.USE_BIOMETRIC', ''),
+              ('android.permission.USE_FINGERPRINT', ''),
+          ]
+          missing = []
+          for name, attributes in required:
+              pattern = r'<uses-permission\\b[^>]*android:name="' + re.escape(name) + r'"'
+              if not re.search(pattern, data):
+                  missing.append(
+                      f'    <uses-permission android:name="{name}"{attributes} />'
+                  )
+          if missing:
+              marker = "<application"
+              if marker not in data:
+                  raise SystemExit("AndroidManifest.xml has no <application> element")
+              data = data.replace(marker, "\\n".join(missing) + "\\n    " + marker, 1)
+              path.write_text(data, encoding="utf-8")
+          print("Verified Android permissions:", ", ".join(name for name, _ in required))
+          PY
+      - name: Verify Android app identity and permissions
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path("android/app/src/main/AndroidManifest.xml")
+          data = path.read_text(encoding="utf-8")
+          required = [
+              "android.permission.INTERNET",
+              "android.permission.MANAGE_EXTERNAL_STORAGE",
+              "android.permission.READ_MEDIA_IMAGES",
+              "android.permission.READ_MEDIA_VIDEO",
+              "android.permission.READ_MEDIA_AUDIO",
+              "android.permission.ACCESS_MEDIA_LOCATION",
+              "android.permission.USE_BIOMETRIC",
+          ]
+          missing = [name for name in required if name not in data]
+          if missing:
+              raise SystemExit("Missing Android permissions: " + ", ".join(missing))
+          application = re.search(r"<application\\b[^>]*>", data)
+          if not application or 'android:label="Bubble File Manager"' not in application.group(0):
+              raise SystemExit("Android application label is not Bubble File Manager")
+          print("Android manifest identity and required permissions verified.")
           PY
       - name: Configure biometric-compatible Android SDK
         run: |
