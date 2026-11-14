@@ -9,6 +9,7 @@ import 'advanced_tools.dart';
 import 'face_albums.dart';
 import 'media_thumbnail.dart';
 import 'location_albums.dart';
+import 'vault_gesture.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
@@ -543,6 +544,18 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
 
   bool _isExpiringRecycleRecords = false;
 
+  bool _isInsideRecycleDirectory(String path) {
+    final recycleRoot = _recycleDirectory;
+    if (recycleRoot == null || path.trim().isEmpty) return false;
+    final separator = Platform.pathSeparator;
+    final root = Uri.directory(recycleRoot.absolute.path)
+        .normalizePath()
+        .toFilePath();
+    final candidate = Uri.file(path).normalizePath().toFilePath();
+    final prefix = root.endsWith(separator) ? root : '$root$separator';
+    return candidate.startsWith(prefix);
+  }
+
   Future<void> _expireRecycleRecords() async {
     if (_isExpiringRecycleRecords) return;
     _isExpiringRecycleRecords = true;
@@ -550,24 +563,46 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
       final now = DateTime.now().millisecondsSinceEpoch;
       final keep = <Map<String, dynamic>>[];
       var changed = false;
+
       for (final record in List<Map<String, dynamic>>.from(_recycleRecords)) {
-        final stage = record['stage'] as String? ?? 'bin';
+        final storedPath = record['storedPath'];
+        if (storedPath is! String || !_isInsideRecycleDirectory(storedPath)) {
+          // Never delete a path that does not resolve inside the private
+          // Recycle Bin directory, even if the index file is damaged.
+          keep.add(record);
+          continue;
+        }
+
+        final stage = record['stage'] == 'shred' ? 'shred' : 'bin';
         final started = (record['stageStartedAt'] as num?)?.toInt() ?? now;
         final lifetime = stage == 'shred'
             ? const Duration(hours: 2).inMilliseconds
             : const Duration(days: 30).inMilliseconds;
-        if (now - started >= lifetime) {
-          try {
-            await _deleteEntityPermanently(record['storedPath'] as String);
-            changed = true;
-          } catch (_) {
-            // Keep recovery metadata so a failed deletion can be retried.
-            keep.add(record);
-          }
-        } else {
+
+        if (now - started < lifetime) {
+          keep.add(record);
+          continue;
+        }
+
+        if (stage == 'bin') {
+          // A 30-day expiry starts the separate 2-hour recovery window;
+          // it does not immediately destroy the only remaining copy.
+          record['stage'] = 'shred';
+          record['stageStartedAt'] = now;
+          keep.add(record);
+          changed = true;
+          continue;
+        }
+
+        try {
+          await _deleteEntityPermanently(storedPath);
+          changed = true;
+        } catch (_) {
+          // Keep recovery metadata so a failed deletion can be retried.
           keep.add(record);
         }
       }
+
       if (changed || keep.length != _recycleRecords.length) {
         if (mounted) {
           setState(() => _recycleRecords = keep);
@@ -678,36 +713,68 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
   }
 
   Future<void> _restoreRecycleRecord(Map<String, dynamic> record) async {
+    String? destination;
     try {
-      var destination = record['originalPath'] as String;
+      final sourcePath = record['storedPath'];
+      final originalPath = record['originalPath'];
+      if (sourcePath is! String ||
+          !_isInsideRecycleDirectory(sourcePath) ||
+          originalPath is! String ||
+          originalPath.trim().isEmpty) {
+        throw StateError('The Recycle Bin record is invalid or unsafe.');
+      }
+
+      destination = originalPath;
       final parent = Directory(File(destination).parent.path);
       await parent.create(recursive: true);
-      if (await FileSystemEntity.type(destination) != FileSystemEntityType.notFound) {
+      if (await FileSystemEntity.type(destination, followLinks: false) !=
+          FileSystemEntityType.notFound) {
         final base = destination;
         var suffix = 1;
         do {
           destination = '$base (restored $suffix)';
           suffix++;
-        } while (await FileSystemEntity.type(destination) != FileSystemEntityType.notFound);
+        } while (await FileSystemEntity.type(destination, followLinks: false) !=
+            FileSystemEntityType.notFound);
       }
-      final sourcePath = record['storedPath'] as String;
+
       final type = await FileSystemEntity.type(sourcePath, followLinks: false);
       if (type == FileSystemEntityType.directory) {
         await _copyEntityRecursively(Directory(sourcePath), destination);
-      } else {
+      } else if (type == FileSystemEntityType.file) {
         await File(sourcePath).copy(destination);
+      } else {
+        throw FileSystemException('Recycle copy is missing or unsupported', sourcePath);
       }
+
+      // Persist removal of the record before deleting its recovery copy. If
+      // saving fails, keep the original recovery copy and restore the row.
+      final recordId = record['id'];
+      final index = _recycleRecords.indexWhere((item) => item['id'] == recordId);
+      if (index < 0) throw StateError('This Recycle Bin item is no longer available.');
+      final removed = _recycleRecords.removeAt(index);
+      if (mounted) setState(() {});
+      try {
+        await _saveRecycleRecords();
+      } catch (_) {
+        _recycleRecords.insert(index, removed);
+        if (mounted) setState(() {});
+        rethrow;
+      }
+
       await _deleteEntityPermanently(sourcePath);
-      setState(() => _recycleRecords.removeWhere((item) => item['id'] == record['id']));
-      await _saveRecycleRecords();
       _message('File restored.');
       if (_hasStorage) await _loadDirectory(_current);
     } catch (e) {
-      _message('Restore failed: ' + e.toString());
+      _message('Restore failed: $e');
     }
   }
 
   Future<void> _deleteAgainForTwoHours(Map<String, dynamic> record) async {
+    if (record['stage'] == 'shred') {
+      _message('This item is already in its 2-hour recovery period.');
+      return;
+    }
     final oldStage = record['stage'];
     final oldStarted = record['stageStartedAt'];
     setState(() {
@@ -1119,74 +1186,7 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
     if (mounted) setState(() {});
   }
 
-  bool _isFreehandBox(List<Offset> points) {
-    // Recognise a hand-drawn, roughly closed four-sided loop. The shape may
-    // be tilted, uneven, wide or tall; it does not need square corners.
-    if (points.length < 6) return false;
-
-    var minX = double.infinity;
-    var minY = double.infinity;
-    var maxX = -double.infinity;
-    var maxY = -double.infinity;
-    var pathLength = 0.0;
-
-    for (var i = 0; i < points.length; i++) {
-      final point = points[i];
-      minX = math.min(minX, point.dx);
-      minY = math.min(minY, point.dy);
-      maxX = math.max(maxX, point.dx);
-      maxY = math.max(maxY, point.dy);
-      if (i > 0) {
-        pathLength += (point - points[i - 1]).distance;
-      }
-    }
-
-    final width = maxX - minX;
-    final height = maxY - minY;
-    final side = math.max(width, height);
-    if (width < 30 || height < 30 || side == 0) return false;
-
-    // Accept a much wider range of proportions than a square.
-    final ratio = width / height;
-    if (ratio < .25 || ratio > 4.0) return false;
-
-    // A little gap is fine; users do not have to join the start and end
-    // perfectly when drawing with a finger.
-    final closingGap = (points.first - points.last).distance;
-    if (closingGap > math.max(72.0, side * .68)) return false;
-
-    // Require enough movement to rule out a simple tap or short line.
-    if (pathLength < (width + height) * .85) return false;
-
-    // Measure coverage around the centre rather than the bounding-box
-    // quadrants. This correctly accepts diamonds, tilted boxes and skewed
-    // quadrilaterals whose corners may sit at the middle of each bounding edge.
-    final center = Offset((minX + maxX) / 2, (minY + maxY) / 2);
-    const twoPi = math.pi * 2;
-    final sectors = <bool>[false, false, false, false];
-    for (final point in points) {
-      final delta = point - center;
-      if (delta.distance < side * .18) continue;
-      var angle = math.atan2(delta.dy, delta.dx);
-      if (angle < 0) angle += twoPi;
-
-      // Four broad 110-degree sectors centred on right, bottom, left and top.
-      if (angle <= math.pi / 2 || angle >= twoPi - math.pi / 4) {
-        sectors[0] = true; // right
-      }
-      if (angle >= math.pi / 4 && angle <= math.pi * 3 / 4) {
-        sectors[1] = true; // bottom
-      }
-      if (angle >= math.pi * 3 / 4 && angle <= math.pi * 5 / 4) {
-        sectors[2] = true; // left
-      }
-      if (angle >= math.pi * 5 / 4 && angle <= math.pi * 7 / 4) {
-        sectors[3] = true; // top
-      }
-    }
-
-    return sectors.every((visited) => visited);
-  }
+  bool _isFreehandBox(List<Offset> points) => isFreehandVaultGesture(points);
 
   Future<void> _createFolder() async {
     final controller = TextEditingController();
@@ -2756,12 +2756,17 @@ class _BubbleFieldState extends State<BubbleField> with SingleTickerProviderStat
 
       if (b.x < b.r) { b.x = b.r; b.vx = b.vx.abs() * .86; }
       if (b.x > _size.width - b.r) { b.x = _size.width - b.r; b.vx = -b.vx.abs() * .86; }
-      // Bubbles rise out through the top and respawn below the screen.
-      // Bouncing them off the top trapped them at the ceiling and stopped
-      // the intended continuous underwater flow.
-      if (b.y + b.r < 0) {
-        _bubbles[index] = _createBubble(y: _size.height + b.r);
-        continue;
+      // Bubbles rebound softly from the top and bottom as well as the
+      // side walls. This keeps them visible and gives both gravity modes
+      // a clear, continuous bounce response.
+      final top = b.r;
+      final bottom = math.max(b.r, _size.height - b.r);
+      if (b.y < top) {
+        b.y = top;
+        b.vy = math.max(.55, b.vy.abs() * .78);
+      } else if (b.y > bottom) {
+        b.y = bottom;
+        b.vy = -math.max(.55, b.vy.abs() * .78);
       }
     }
 
