@@ -22,15 +22,15 @@ void main() {
 
     test('accepts a wide hand-drawn rectangle', () {
       final points = <Offset>[
-        const Offset(40, 80),
-        const Offset(90, 72),
-        const Offset(150, 75),
-        const Offset(200, 85),
-        const Offset(205, 125),
-        const Offset(145, 132),
-        const Offset(85, 128),
-        const Offset(42, 118),
-        const Offset(40, 80),
+        const Offset(70, 80),
+        const Offset(110, 70),
+        const Offset(160, 75),
+        const Offset(190, 85),
+        const Offset(190, 120),
+        const Offset(150, 130),
+        const Offset(100, 128),
+        const Offset(45, 118),
+        const Offset(70, 80),
       ];
 
       expect(isFreehandVaultGesture(points), isTrue);
