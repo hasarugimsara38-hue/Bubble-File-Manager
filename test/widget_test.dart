@@ -26,7 +26,7 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
     await tester.tap(find.text('AI Assistant'));
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(milliseconds: 350));
     expect(find.text('Aqua Assistant'), findsOneWidget);
     expect(find.text('Offline guidance'), findsOneWidget);
   });
