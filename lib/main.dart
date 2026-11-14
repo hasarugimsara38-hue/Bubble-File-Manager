@@ -6,6 +6,7 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'advanced_tools.dart';
+import 'ai_assistant.dart';
 import 'face_albums.dart';
 import 'media_thumbnail.dart';
 import 'location_albums.dart';
@@ -2013,6 +2014,17 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
             })),
       ])),
       const SizedBox(height: 18),
+      _standardCard(child: ListTile(
+        contentPadding: EdgeInsets.zero,
+        leading: Icon(Icons.smart_toy_outlined, color: _accent, size: 27),
+        title: const Text('AI Assistant', style: TextStyle(fontWeight: FontWeight.w700)),
+        subtitle: const Text('Get help with storage, files, Vault and app features', style: TextStyle(fontSize: 11)),
+        trailing: const Icon(Icons.chevron_right_rounded),
+        onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+          builder: (_) => AquaAiAssistantPage(accent: _accent),
+        )),
+      )),
+      const SizedBox(height: 10),
       _standardCard(child: ListTile(
         contentPadding: EdgeInsets.zero,
         leading: Icon(Icons.auto_awesome_rounded, color: _accent, size: 27),
