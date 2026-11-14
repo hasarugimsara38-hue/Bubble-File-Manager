@@ -1120,7 +1120,10 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
   }
 
   bool _isFreehandBox(List<Offset> points) {
-    if (points.length < 12) return false;
+    // Accept a naturally hand-drawn, roughly closed quadrilateral. It does
+    // not need to be square, have right angles, or touch bounding-box corners.
+    if (points.length < 8) return false;
+
     var minX = double.infinity, minY = double.infinity;
     var maxX = -double.infinity, maxY = -double.infinity;
     var pathLength = 0.0;
@@ -1132,25 +1135,38 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
       maxY = math.max(maxY, p.dy);
       if (i > 0) pathLength += (p - points[i - 1]).distance;
     }
+
     final width = maxX - minX;
     final height = maxY - minY;
     final side = math.max(width, height);
-    if (math.min(width, height) < 56 || side == 0) return false;
-    final ratio = width / height;
-    if (ratio < .62 || ratio > 1.6) return false;
-    final startGap = (points.first - points.last).distance;
-    if (startGap > math.max(30.0, side * .28)) return false;
-    if (pathLength < (width + height) * 1.25) return false;
+    if (width < 42 || height < 42 || side == 0) return false;
 
-    final cornerRadius = side * .38;
-    final corners = <Offset>[
-      Offset(minX, minY), Offset(maxX, minY),
-      Offset(maxX, maxY), Offset(minX, maxY),
-    ];
-    for (final corner in corners) {
-      if (!points.any((p) => (p - corner).distance <= cornerRadius)) return false;
-    }
-    return true;
+    // Permit tall, wide, slanted and uneven quadrilateral shapes.
+    final ratio = width / height;
+    if (ratio < .35 || ratio > 2.8) return false;
+
+    // The finger path should return reasonably close to where it began.
+    final startGap = (points.first - points.last).distance;
+    if (startGap > math.max(48.0, side * .42)) return false;
+
+    // Reject short strokes and simple lines, while allowing imperfect sides.
+    if (pathLength < (width + height) * 1.05) return false;
+
+    // Check that the path reaches the top, right, bottom and left regions.
+    // This works for diamonds and skewed quadrilaterals as well as rectangles.
+    final center = Offset((minX + maxX) / 2, (minY + maxY) / 2);
+    final reach = side * .22;
+    final hasTop = points.any((p) => p.dy <= minY + reach);
+    final hasRight = points.any((p) => p.dx >= maxX - reach);
+    final hasBottom = points.any((p) => p.dy >= maxY - reach);
+    final hasLeft = points.any((p) => p.dx <= minX + reach);
+    if (!(hasTop && hasRight && hasBottom && hasLeft)) return false;
+
+    // Avoid accepting a tiny circular scribble or a straight back-and-forth.
+    final radialSpread = points
+        .map((p) => (p - center).distance)
+        .fold<double>(0, math.max);
+    return radialSpread >= side * .38;
   }
 
   Future<void> _createFolder() async {
