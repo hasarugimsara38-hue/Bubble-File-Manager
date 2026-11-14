@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:bubble_file_manager/main.dart';
+import 'package:bubble_file_manager/ai_assistant.dart';
 
 void main() {
   testWidgets('Bubble File Manager shows splash then opens My Files home', (tester) async {
@@ -17,3 +18,19 @@ void main() {
     expect(find.text('Categories'), findsOneWidget);
   });
 }
+
+
+testWidgets('Aqua Assistant opens and responds to a help question', (tester) async {
+  await tester.pumpWidget(MaterialApp(
+    theme: ThemeData.dark(),
+    home: const AquaAiAssistantPage(accent: Color(0xFF20E4E8)),
+  ));
+
+  expect(find.text('Aqua Assistant'), findsOneWidget);
+  expect(find.text('Offline guidance'), findsOneWidget);
+
+  await tester.tap(find.text('How do I allow storage access?'));
+  await tester.pumpAndSettle();
+
+  expect(find.textContaining('All files access settings page'), findsOneWidget);
+});
