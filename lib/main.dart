@@ -8,6 +8,7 @@ import 'dart:ui' as ui;
 import 'advanced_tools.dart';
 import 'ai_assistant.dart';
 import 'face_albums.dart';
+import 'home_companions.dart';
 import 'media_thumbnail.dart';
 import 'location_albums.dart';
 import 'vault_gesture.dart';
@@ -291,6 +292,7 @@ class AquaApp extends StatefulWidget {
 }
 
 class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTickerProviderStateMixin {
+  final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
   int _tab = 0;
   int _theme = 0;
   bool _gravity = true;
@@ -1135,14 +1137,66 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
   }
 
   Future<void> _openAdvancedTools({bool openVaultOnStart = false}) async {
-    await Navigator.of(context).push(MaterialPageRoute<void>(
+    final navigator = _navigatorKey.currentState;
+    if (navigator == null) return;
+    await navigator.push(MaterialPageRoute<void>(
       builder: (_) => AquaAdvancedTools(
         targetDirectory: _current,
         accent: _accent,
         openVaultOnStart: openVaultOnStart,
       ),
     ));
+    if (!mounted) return;
     if (_hasStorage) await _loadDirectory(_current);
+  }
+
+  Future<void> _handleCompanionAction(String action) async {
+    switch (action) {
+      case 'files':
+        setState(() {
+          _fileCategory = 'All files';
+          _search = '';
+          _tab = 1;
+        });
+        await _loadDirectory(_root);
+        break;
+      case 'images':
+        await _loadCategoryFiles('Images');
+        break;
+      case 'videos':
+        await _loadCategoryFiles('Videos');
+        break;
+      case 'audio':
+        await _loadCategoryFiles('Audio');
+        break;
+      case 'vault':
+        await _openAdvancedTools(openVaultOnStart: true);
+        break;
+      case 'tools':
+        await _openAdvancedTools();
+        break;
+      case 'faces':
+        final navigator = _navigatorKey.currentState;
+        if (navigator == null) return;
+        await navigator.push(MaterialPageRoute<void>(
+          builder: (_) => FaceAlbumsPage(targetDirectory: _root, accent: _accent),
+        ));
+        break;
+      case 'locations':
+        final navigator = _navigatorKey.currentState;
+        if (navigator == null) return;
+        await navigator.push(MaterialPageRoute<void>(
+          builder: (_) => LocationAlbumsPage(targetDirectory: _root, accent: _accent),
+        ));
+        break;
+      case 'assistant':
+        final navigator = _navigatorKey.currentState;
+        if (navigator == null) return;
+        await navigator.push(MaterialPageRoute<void>(
+          builder: (_) => AquaAiAssistantPage(accent: _accent),
+        ));
+        break;
+    }
   }
 
   int? _secretGesturePointer;
@@ -1809,6 +1863,7 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
     final base = _light ? const Color(0xFFEAF5F7) : const Color(0xFF04141E);
     final foreground = _light ? const Color(0xFF102B38) : Colors.white;
     return MaterialApp(
+      navigatorKey: _navigatorKey,
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
@@ -1921,6 +1976,8 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
       Text('My Files', style: TextStyle(fontSize: 30, fontWeight: FontWeight.w800, color: foreground)),
       const SizedBox(height: 5),
       Text('Manage files on your device', style: TextStyle(fontSize: 13, color: foreground.withOpacity(.62))),
+      const SizedBox(height: 14),
+      HomeCompanionsPanel(accent: _accent, onAction: _handleCompanionAction),
       const SizedBox(height: 22),
       _standardCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
@@ -2020,7 +2077,7 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
         title: const Text('AI Assistant', style: TextStyle(fontWeight: FontWeight.w700)),
         subtitle: const Text('Get help with storage, files, Vault and app features', style: TextStyle(fontSize: 11)),
         trailing: const Icon(Icons.chevron_right_rounded),
-        onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+        onTap: () => _navigatorKey.currentState?.push(MaterialPageRoute<void>(
           builder: (_) => AquaAiAssistantPage(accent: _accent),
         )),
       )),
@@ -2051,14 +2108,14 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
     borderRadius: BorderRadius.circular(20),
     onTap: () {
       if (title == 'Places') {
-        Navigator.of(context).push(MaterialPageRoute<void>(
+        _navigatorKey.currentState?.push(MaterialPageRoute<void>(
           builder: (_) => LocationAlbumsPage(
             targetDirectory: _root,
             accent: _accent,
           ),
         ));
       } else if (title == 'Face Albums') {
-        Navigator.of(context).push(MaterialPageRoute<void>(
+        _navigatorKey.currentState?.push(MaterialPageRoute<void>(
           builder: (_) => FaceAlbumsPage(
             targetDirectory: _root,
             accent: _accent,
