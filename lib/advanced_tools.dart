@@ -5,6 +5,7 @@ import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
 import 'face_albums.dart';
+import 'ai_assistant.dart';
 import 'location_albums.dart';
 import 'package:cryptography/cryptography.dart';
 import 'package:crypto/crypto.dart' as hashes;
@@ -680,6 +681,11 @@ class _AquaAdvancedToolsState extends State<AquaAdvancedTools> {
       if (_busy) const LinearProgressIndicator(),
       Text(_status, style: const TextStyle(color: Colors.white70)),
       const SizedBox(height: 12),
+      _toolCard('AI Assistant', 'Open the built-in assistant for file-manager help and guidance', Icons.auto_awesome_rounded, () {
+        Navigator.of(context).push(MaterialPageRoute<void>(
+          builder: (_) => AquaAiAssistantPage(accent: widget.accent),
+        ));
+      }),
       _toolCard('Secret Vault', 'Open the encrypted Vault, create or unlock it with your PIN, and manage protected files', Icons.lock, _openVault),
       _toolCard('Create ZIP', 'Compress selected files into one archive', Icons.archive, _createZip),
       _toolCard('Extract ZIP', 'Extract an archive with path-traversal checks', Icons.unarchive, _extractZip),
