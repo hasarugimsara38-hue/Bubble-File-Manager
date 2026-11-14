@@ -134,11 +134,19 @@ class _LocationAlbumsPageState extends State<LocationAlbumsPage> {
   Future<void> _scan() async {
     if (_scanning) return;
 
-    // GPS EXIF reads require broad file access for the same shared folders
-    // that the file manager scans. ACCESS_MEDIA_LOCATION alone does not
-    // grant directory access on modern Android versions.
-    if (Platform.isAndroid) {
-      try {
+    // Set the busy flag before any permission dialog so repeated taps cannot
+    // launch overlapping permission requests or concurrent directory scans.
+    setState(() {
+      _scanning = true;
+      _checked = 0;
+      _status = 'Checking photo and storage access…';
+    });
+
+    try {
+      // GPS EXIF reads require broad file access for the same shared folders
+      // that the file manager scans. ACCESS_MEDIA_LOCATION alone does not
+      // grant directory access on modern Android versions.
+      if (Platform.isAndroid) {
         var storagePermission = await Permission.manageExternalStorage.status;
         if (!storagePermission.isGranted) {
           storagePermission = await Permission.manageExternalStorage.request();
@@ -150,43 +158,42 @@ class _LocationAlbumsPageState extends State<LocationAlbumsPage> {
           }
           return;
         }
-      } catch (error) {
-        if (mounted) {
-          setState(() => _status = 'Could not check storage access: $error');
-        }
-        return;
       }
-    }
 
-    // Android 10+ may redact photo GPS metadata unless this runtime permission
-    // is granted. Continue scanning accessible EXIF tags if it is denied.
-    var gpsPermissionGranted = true;
-    try {
-      final permission = await Permission.accessMediaLocation.request();
-      gpsPermissionGranted = permission.isGranted;
-    } catch (_) {
-      gpsPermissionGranted = false;
-    }
-    if (!mounted) return;
-    setState(() {
-      _scanning = true;
-      _checked = 0;
-      _status = gpsPermissionGranted
-          ? 'Reading photo GPS metadata on this device…'
-          : 'Location metadata permission was not granted. Scanning accessible GPS tags anyway…';
-    });
-    final roots = <Directory>[];
-    final seenRoots = <String>{};
-    for (final path in <String>[widget.targetDirectory.path, '/storage/emulated/0', '/storage']) {
-      final root = Directory(path);
-      if (await root.exists() && seenRoots.add(root.path)) roots.add(root);
-    }
-    try {
+      // Android 10+ may redact photo GPS metadata unless this runtime
+      // permission is granted. Continue scanning accessible EXIF tags if it
+      // is denied; this does not upload the photos.
+      var gpsPermissionGranted = true;
+      try {
+        final permission = await Permission.accessMediaLocation.request();
+        gpsPermissionGranted = permission.isGranted;
+      } catch (_) {
+        gpsPermissionGranted = false;
+      }
+      if (!mounted) return;
+      setState(() {
+        _status = gpsPermissionGranted
+            ? 'Reading photo GPS metadata on this device…'
+            : 'Location metadata permission was not granted. Scanning accessible GPS tags anyway…';
+      });
+
+      final roots = <Directory>[];
+      final seenRoots = <String>{};
+      for (final path in <String>[
+        widget.targetDirectory.path,
+        '/storage/emulated/0',
+        '/storage',
+      ]) {
+        final root = Directory(path);
+        if (await root.exists() && seenRoots.add(root.path)) roots.add(root);
+      }
+
       final pending = <Directory>[...roots];
       final visited = <String>{};
       final found = <_LocatedPhoto>[];
       const extensions = <String>{'jpg', 'jpeg', 'tif', 'tiff', 'heic', 'heif'};
       const maxFiles = 5000;
+
       while (pending.isNotEmpty && _checked < maxFiles) {
         final directory = pending.removeLast();
         if (!visited.add(directory.path)) continue;
@@ -194,48 +201,74 @@ class _LocationAlbumsPageState extends State<LocationAlbumsPage> {
           await for (final entity in directory.list(followLinks: false)) {
             if (entity is Directory) {
               final path = entity.path;
-              final name = entity.uri.pathSegments.isEmpty ? '' : entity.uri.pathSegments.last;
+              final name = entity.uri.pathSegments.isEmpty
+                  ? ''
+                  : entity.uri.pathSegments.last;
               if (name.startsWith('.') ||
                   path.contains('/Android/data') ||
                   path.contains('/Android/obb') ||
                   path.contains('/aqua_encrypted_vault') ||
-                  path.contains('/aqua_recycle_bin')) continue;
+                  path.contains('/aqua_recycle_bin')) {
+                continue;
+              }
               pending.add(entity);
             } else if (entity is File) {
-              final name = entity.uri.pathSegments.isEmpty ? '' : entity.uri.pathSegments.last;
-              final extension = name.contains('.') ? name.split('.').last.toLowerCase() : '';
+              final name = entity.uri.pathSegments.isEmpty
+                  ? ''
+                  : entity.uri.pathSegments.last;
+              final extension = name.contains('.')
+                  ? name.split('.').last.toLowerCase()
+                  : '';
               if (!extensions.contains(extension)) continue;
+
               _checked++;
               if (_checked % 40 == 0 && mounted) {
                 setState(() => _status = 'Checked $_checked photos…');
               }
+
               try {
                 final length = await entity.length();
                 if (length == 0 || length > 20 * 1024 * 1024) continue;
                 final tags = await readExifFromBytes(await entity.readAsBytes());
-                final lat = _coordinate(tags['GPS GPSLatitude']?.printable,
-                    tags['GPS GPSLatitudeRef']?.printable ?? 'N');
-                final lon = _coordinate(tags['GPS GPSLongitude']?.printable,
-                    tags['GPS GPSLongitudeRef']?.printable ?? 'E');
-                if (lat == null || lon == null || lat < -90 || lat > 90 || lon < -180 || lon > 180) continue;
+                final lat = _coordinate(
+                  tags['GPS GPSLatitude']?.printable,
+                  tags['GPS GPSLatitudeRef']?.printable ?? 'N',
+                );
+                final lon = _coordinate(
+                  tags['GPS GPSLongitude']?.printable,
+                  tags['GPS GPSLongitudeRef']?.printable ?? 'E',
+                );
+                if (lat == null ||
+                    lon == null ||
+                    lat < -90 ||
+                    lat > 90 ||
+                    lon < -180 ||
+                    lon > 180) {
+                  continue;
+                }
                 found.add(_LocatedPhoto(entity, lat, lon));
               } catch (_) {
-                // Ignore unsupported, damaged, or inaccessible images and continue.
+                // Ignore unsupported, damaged, or inaccessible images.
               }
+
               if (_checked >= maxFiles) break;
             }
           }
         } catch (_) {
-          // Android may deny access to individual folders; continue with the rest.
+          // Android may deny access to individual folders; continue scanning.
         }
       }
+
       if (!mounted) return;
       setState(() {
         _photos = found;
-        _status = 'Checked $_checked photos. Found GPS details in ${found.length} photos across ${_groups.length} location groups.';
+        _status =
+            'Checked $_checked photos. Found GPS details in ${found.length} photos across ${_groups.length} location groups.';
       });
     } catch (error) {
-      if (mounted) setState(() => _status = 'Location scan failed: $error');
+      if (mounted) {
+        setState(() => _status = 'Location scan failed: $error');
+      }
     } finally {
       if (mounted) setState(() => _scanning = false);
     }
