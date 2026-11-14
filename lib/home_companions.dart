@@ -338,7 +338,7 @@ class _HomeCompanionsPanelState extends State<HomeCompanionsPanel> {
 }
 
 class _AnimeDuoPainter extends CustomPainter {
-  const _AnimeDuoPainter({required this.speaker, required this.accent});
+  _AnimeDuoPainter({required this.speaker, required this.accent});
 
   final String speaker;
   final Color accent;
