@@ -133,8 +133,33 @@ class _LocationAlbumsPageState extends State<LocationAlbumsPage> {
 
   Future<void> _scan() async {
     if (_scanning) return;
-    // Android 10+ may redact photo GPS metadata unless this runtime permission is granted.
-    // Continue the scan if denied; some files or Android versions may still expose EXIF GPS.
+
+    // GPS EXIF reads require broad file access for the same shared folders
+    // that the file manager scans. ACCESS_MEDIA_LOCATION alone does not
+    // grant directory access on modern Android versions.
+    if (Platform.isAndroid) {
+      try {
+        var storagePermission = await Permission.manageExternalStorage.status;
+        if (!storagePermission.isGranted) {
+          storagePermission = await Permission.manageExternalStorage.request();
+        }
+        if (!storagePermission.isGranted) {
+          if (mounted) {
+            setState(() => _status =
+                'Allow "All files access" in Android Settings, then return and scan again. Location Albums cannot read shared photo folders without storage access.');
+          }
+          return;
+        }
+      } catch (error) {
+        if (mounted) {
+          setState(() => _status = 'Could not check storage access: $error');
+        }
+        return;
+      }
+    }
+
+    // Android 10+ may redact photo GPS metadata unless this runtime permission
+    // is granted. Continue scanning accessible EXIF tags if it is denied.
     var gpsPermissionGranted = true;
     try {
       final permission = await Permission.accessMediaLocation.request();
