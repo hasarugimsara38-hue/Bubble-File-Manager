@@ -1120,53 +1120,65 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
   }
 
   bool _isFreehandBox(List<Offset> points) {
-    // Accept a naturally hand-drawn, roughly closed quadrilateral. It does
-    // not need to be square, have right angles, or touch bounding-box corners.
-    if (points.length < 8) return false;
+    // Recognise a hand-drawn, roughly closed four-sided loop. The shape may
+    // be tilted, uneven, wide or tall; it does not need square corners.
+    if (points.length < 6) return false;
 
-    var minX = double.infinity, minY = double.infinity;
-    var maxX = -double.infinity, maxY = -double.infinity;
+    var minX = double.infinity;
+    var minY = double.infinity;
+    var maxX = -double.infinity;
+    var maxY = -double.infinity;
     var pathLength = 0.0;
+
     for (var i = 0; i < points.length; i++) {
-      final p = points[i];
-      minX = math.min(minX, p.dx);
-      minY = math.min(minY, p.dy);
-      maxX = math.max(maxX, p.dx);
-      maxY = math.max(maxY, p.dy);
-      if (i > 0) pathLength += (p - points[i - 1]).distance;
+      final point = points[i];
+      minX = math.min(minX, point.dx);
+      minY = math.min(minY, point.dy);
+      maxX = math.max(maxX, point.dx);
+      maxY = math.max(maxY, point.dy);
+      if (i > 0) {
+        pathLength += (point - points[i - 1]).distance;
+      }
     }
 
     final width = maxX - minX;
     final height = maxY - minY;
     final side = math.max(width, height);
-    if (width < 42 || height < 42 || side == 0) return false;
+    if (width < 30 || height < 30 || side == 0) return false;
 
-    // Permit tall, wide, slanted and uneven quadrilateral shapes.
+    // Accept a much wider range of proportions than a square.
     final ratio = width / height;
-    if (ratio < .35 || ratio > 2.8) return false;
+    if (ratio < .25 || ratio > 4.0) return false;
 
-    // The finger path should return reasonably close to where it began.
-    final startGap = (points.first - points.last).distance;
-    if (startGap > math.max(48.0, side * .42)) return false;
+    // A little gap is fine; users do not have to join the start and end
+    // perfectly when drawing with a finger.
+    final closingGap = (points.first - points.last).distance;
+    if (closingGap > math.max(72.0, side * .68)) return false;
 
-    // Reject short strokes and simple lines, while allowing imperfect sides.
-    if (pathLength < (width + height) * 1.05) return false;
+    // Require enough movement to rule out a simple tap or short line.
+    if (pathLength < (width + height) * .85) return false;
 
-    // Check that the path reaches the top, right, bottom and left regions.
-    // This works for diamonds and skewed quadrilaterals as well as rectangles.
-    final center = Offset((minX + maxX) / 2, (minY + maxY) / 2);
-    final reach = side * .22;
-    final hasTop = points.any((p) => p.dy <= minY + reach);
-    final hasRight = points.any((p) => p.dx >= maxX - reach);
-    final hasBottom = points.any((p) => p.dy >= maxY - reach);
-    final hasLeft = points.any((p) => p.dx <= minX + reach);
-    if (!(hasTop && hasRight && hasBottom && hasLeft)) return false;
+    // A roughly four-sided loop should pass through all four broad regions
+    // around its centre. This also accepts diamonds and skewed rectangles.
+    final centerX = (minX + maxX) / 2;
+    final centerY = (minY + maxY) / 2;
+    final insetX = width * .08;
+    final insetY = height * .08;
+    final quadrants = <bool>[false, false, false, false];
 
-    // Avoid accepting a tiny circular scribble or a straight back-and-forth.
-    final radialSpread = points
-        .map((p) => (p - center).distance)
-        .fold<double>(0, math.max);
-    return radialSpread >= side * .38;
+    for (final point in points) {
+      if (point.dx < centerX - insetX && point.dy < centerY - insetY) {
+        quadrants[0] = true; // upper-left
+      } else if (point.dx > centerX + insetX && point.dy < centerY - insetY) {
+        quadrants[1] = true; // upper-right
+      } else if (point.dx > centerX + insetX && point.dy > centerY + insetY) {
+        quadrants[2] = true; // lower-right
+      } else if (point.dx < centerX - insetX && point.dy > centerY + insetY) {
+        quadrants[3] = true; // lower-left
+      }
+    }
+
+    return quadrants.every((visited) => visited);
   }
 
   Future<void> _createFolder() async {
