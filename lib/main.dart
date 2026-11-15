@@ -13,6 +13,7 @@ import 'home_companions.dart';
 import 'media_thumbnail.dart';
 import 'location_albums.dart';
 import 'vault_gesture.dart';
+import 'package:archive/archive.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
@@ -1383,14 +1384,96 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
   }
 
   Future<void> _shareEntity(FileSystemEntity entity) async {
-    if (entity is! File) {
-      _message('Sharing folders is not supported yet. Select an individual file.');
+    if (entity is File) {
+      try {
+        await Share.shareXFiles([XFile(entity.path)], text: _nameOf(entity));
+      } catch (e) {
+        _message('Could not share this file: ' + e.toString());
+      }
       return;
     }
+    if (entity is! Directory) {
+      _message('This item cannot be shared.');
+      return;
+    }
+
+    _message('Preparing a folder archive for sharing…');
     try {
-      await Share.shareXFiles([XFile(entity.path)], text: _nameOf(entity));
+      final root = Directory(entity.absolute.path);
+      final rootPath = root.path;
+      final pending = <Directory>[root];
+      final visited = <String>{};
+      final archive = Archive();
+      var fileCount = 0;
+      var totalBytes = 0;
+      const maxFiles = 200;
+      const maxDirectories = 1000;
+      const maxBytes = 64 * 1024 * 1024;
+
+      while (pending.isNotEmpty) {
+        final directory = pending.removeLast();
+        final directoryPath = directory.absolute.path;
+        if (!visited.add(directoryPath)) continue;
+        if (visited.length > maxDirectories) {
+          throw StateError('The folder contains too many subfolders to share safely.');
+        }
+
+        await for (final child in directory.list(followLinks: false)) {
+          if (child is Directory) {
+            pending.add(child);
+            continue;
+          }
+          if (child is! File) continue;
+
+          final length = await child.length();
+          if (length > maxBytes - totalBytes) {
+            throw StateError(
+              'The folder exceeds the 64 MB in-app sharing limit. Choose a smaller folder.',
+            );
+          }
+          final bytes = await child.readAsBytes();
+          final absolutePath = child.absolute.path;
+          if (!absolutePath.startsWith('$rootPath${Platform.pathSeparator}')) {
+            continue;
+          }
+          final relativePath = absolutePath
+              .substring(rootPath.length + 1)
+              .replaceAll(Platform.pathSeparator, '/');
+          if (relativePath.isEmpty ||
+              relativePath.startsWith('/') ||
+              relativePath.split('/').contains('..')) {
+            continue;
+          }
+          archive.addFile(ArchiveFile(relativePath, bytes.length, bytes));
+          fileCount++;
+          totalBytes += bytes.length;
+          if (fileCount > maxFiles) {
+            throw StateError('The folder contains more than 200 files. Choose a smaller folder.');
+          }
+        }
+      }
+
+      if (fileCount == 0) {
+        _message('This folder contains no files to share.');
+        return;
+      }
+      final encoded = ZipEncoder().encode(archive);
+      if (encoded == null) throw StateError('ZIP creation failed.');
+      final temporary = await getTemporaryDirectory();
+      final output = File(
+        '${temporary.path}/BubbleFolder_${DateTime.now().microsecondsSinceEpoch}.zip',
+      );
+      await output.writeAsBytes(encoded, flush: true);
+      try {
+        await Share.shareXFiles(
+          [XFile(output.path)],
+          text: '${_nameOf(entity)}.zip',
+        );
+      } finally {
+        if (await output.exists()) await output.delete();
+      }
     } catch (e) {
-      _message('Could not share this file: ' + e.toString());
+      _message('Could not prepare this folder for sharing: ' + e.toString());
     }
   }
 
@@ -1438,6 +1521,7 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
       'Could not create folder: ': 'ෆෝල්ඩරය සෑදිය නොහැකි විය: ',
       'Rename failed: ': 'නම වෙනස් කිරීම අසාර්ථකයි: ',
       'Could not share this file: ': 'මෙම ගොනුව බෙදාගත නොහැකි විය: ',
+      'Could not prepare this folder for sharing: ': 'මෙම ෆෝල්ඩරය බෙදාගැනීමට සකස් කළ නොහැකි විය: ',
       'Could not open file: ': 'ගොනුව විවෘත කළ නොහැකි විය: ',
       'Cannot read this media file: ': 'මාධ්‍ය ගොනුව කියවිය නොහැකි විය: ',
       'Could not open this ': 'මෙය විවෘත කළ නොහැකි විය: ',
@@ -1456,6 +1540,9 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
       'This item is already in its 2-hour recovery period.': 'මෙම අයිතමය දැනටමත් පැය 2ක ප්‍රතිසාධන කාලයේ ඇත.',
       'Moved to 2-hour temporary recovery stage.': 'පැය 2ක තාවකාලික ප්‍රතිසාධන අදියරට ගෙන ගියා.',
       'Scanning storage for identical files…': 'එකම ගොනු සොයමින් ගබඩාව පරීක්ෂා කරයි…',
+      'Preparing a folder archive for sharing…': 'ෆෝල්ඩරය බෙදාගැනීමට ZIP ගොනුවක් සකස් කරමින්…',
+      'This folder contains no files to share.': 'බෙදාගැනීමට මෙම ෆෝල්ඩරයේ ගොනු නැත.',
+      'This item cannot be shared.': 'මෙම අයිතමය බෙදාගත නොහැක.',
       'Sharing folders is not supported yet. Select an individual file.': 'ෆෝල්ඩර් බෙදාගැනීම තවම සහාය නොදක්වයි. තනි ගොනුවක් තෝරන්න.',
       'Incorrect folder PIN.': 'ෆෝල්ඩර මුරපදය වැරදියි.',
       'Folder PIN removed.': 'ෆෝල්ඩර මුරපදය ඉවත් කළා.',
