@@ -10,6 +10,7 @@ import 'ai_assistant.dart';
 import 'location_albums.dart';
 import 'package:cryptography/cryptography.dart';
 import 'vault_credentials.dart';
+import 'vault_ice_screen.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -417,42 +418,17 @@ class _AquaAdvancedToolsState extends State<AquaAdvancedTools> {
     await _vaultDirectory();
     await _refreshVault();
     if (!mounted) return;
-    await showModalBottomSheet<void>(
-      context: context, isScrollControlled: true, backgroundColor: const Color(0xFF102B38),
-      builder: (context) => SafeArea(child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: SizedBox(height: MediaQuery.of(context).size.height * .65,
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            Text(AppLanguage.text('Encrypted Secret Vault'), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            Text(AppLanguage.text('Files are stored encrypted with AES-256-GCM.'), style: const TextStyle(color: Colors.white70)),
-            const SizedBox(height: 12),
-            FilledButton.icon(onPressed: () async { Navigator.pop(context); await _addToVault(alreadyUnlocked: true); },
-              icon: const Icon(Icons.add), label: Text(AppLanguage.text('Encrypt a file into Vault'))),
-            OutlinedButton.icon(
-              onPressed: _busy ? null : _changePin,
-              icon: const Icon(Icons.password),
-              label: Text(AppLanguage.text('Change Vault password')),
-            ),
-            const SizedBox(height: 6),
-            OutlinedButton.icon(
-              onPressed: _busy ? null : _changeRecoveryDetails,
-              icon: const Icon(Icons.question_answer_outlined),
-              label: Text(AppLanguage.text('Change recovery question / answer')),
-            ),
-            Expanded(child: _vaultFiles.isEmpty
-              ? Center(child: Text(AppLanguage.text('Vault is empty.')))
-              : ListView(children: _vaultFiles.map((file) => ListTile(
-                  leading: const Icon(Icons.lock, color: Colors.cyanAccent),
-                  title: Text(file.uri.pathSegments.last, maxLines: 1, overflow: TextOverflow.ellipsis),
-                  trailing: IconButton(icon: const Icon(Icons.save_alt), onPressed: () async {
-                    Navigator.pop(context);
-                    await _exportFromVault(file, alreadyUnlocked: true);
-                  }),
-                )).toList())),
-            TextButton(onPressed: () => Navigator.pop(context), child: Text(AppLanguage.text('Close'))),
-          ])),
-      )),
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => VaultIceScreen(
+          files: List<File>.unmodifiable(_vaultFiles),
+          busy: _busy,
+          onImport: () => _addToVault(alreadyUnlocked: true),
+          onExport: (file) => _exportFromVault(file, alreadyUnlocked: true),
+          onChangePassword: _changePin,
+          onChangeRecovery: _changeRecoveryDetails,
+        ),
+      ),
     );
   }
 
