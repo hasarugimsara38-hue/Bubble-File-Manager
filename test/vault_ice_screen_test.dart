@@ -43,8 +43,13 @@ void main() {
     ));
 
     await tester.tap(find.text('Open Vault'));
-    await tester.pump(const Duration(milliseconds: 450));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 350));
+    await tester.pump();
 
+    expect(find.byType(VaultIceScreen), findsOneWidget);
+    await tester.ensureVisible(find.text('SECRET VAULT'));
+    await tester.pump();
     expect(find.text('SECRET VAULT'), findsOneWidget);
     expect(find.text('ICE-CORE SECURITY'), findsOneWidget);
     expect(find.text('AES-256-GCM'), findsOneWidget);
