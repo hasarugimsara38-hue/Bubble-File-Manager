@@ -1230,6 +1230,7 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
       builder: (_) => AquaAdvancedTools(
         targetDirectory: _current,
         accent: _accent,
+        onLanguageChanged: _selectLanguage,
         openVaultOnStart: openVaultOnStart,
       ),
     ));
