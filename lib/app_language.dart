@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 /// Small, dependency-free language table shared by the app's screens.
 /// The selected language is restored before the Home screen is shown.
 class AppLanguage {
@@ -76,6 +78,19 @@ class AppLanguage {
     'Bubble File Manager': 'බබල් ගොනු කළමනාකරු',
     'Choose your language': 'ඔබේ භාෂාව තෝරන්න',
     'Language': 'භාෂාව',
+    'Scan your accessible photo folders to create private, on-device people albums.': 'ඔබට ප්‍රවේශ විය හැකි ඡායාරූප ෆෝල්ඩර පරීක්ෂා කර මෙම උපාංගය තුළම පුද්ගල ඇල්බම සාදන්න.',
+    'Checking photo access…': 'ඡායාරූප ප්‍රවේශය පරීක්ෂා කරමින්…',
+    'Preparing offline face model…': 'අන්තර්ජාලය නොමැති මුහුණු ආකෘතිය සූදානම් කරමින්…',
+    'Allow “All files access” in Android Settings, then try again.': 'Android සැකසුම් තුළ “All files access” අවසරය ලබාදී නැවත උත්සාහ කරන්න.',
+    'No supported photos were found in folders this app can access.': 'මෙම යෙදුමට ප්‍රවේශ විය හැකි ෆෝල්ඩරවල සහාය දක්වන ඡායාරූප හමු නොවීය.',
+    'On-device Face Albums': 'උපාංගය තුළම මුහුණු ඇල්බම',
+    'The app detects faces and compares temporary similarity features on this phone. It does not name people or upload photos. Suggested groups can be wrong, so review them manually. Temporary face features are discarded when you leave this screen.': 'මෙම යෙදුම දුරකථනය තුළම මුහුණු හඳුනාගෙන සමානතා පරීක්ෂා කරයි. පුද්ගලයන්ගේ නම් හඳුනා නොගන්නා අතර ඡායාරූප උඩුගත නොකරයි. යෝජිත කණ්ඩායම් වැරදි විය හැකි බැවින් ඔබම පරීක්ෂා කරන්න. මෙම තිරයෙන් පිටවූ විට තාවකාලික මුහුණු දත්ත ඉවත් වේ.',
+    'Accuracy note: lighting, camera angle, age changes, masks and low-resolution images can cause missed or incorrect matches. This is a photo-organising aid, not proof of someone’s identity.': 'ආලෝකය, කැමරා කෝණය, මුහුණ ආවරණය සහ අඩු ගුණාත්මක රූප නිසා ගැළපීම් වැරදි විය හැක. මෙය ඡායාරූප පිළිවෙළට සකස් කිරීමට පමණක් වන සහායකයකි; පුද්ගල අනන්‍යතාව තහවුරු කිරීමක් නොවේ.',
+    'Scan photos to find locations saved in their GPS metadata.': 'ඡායාරූපවල GPS දත්තවල සුරක්ෂිත ස්ථාන සොයා ගැනීමට ඒවා පරීක්ෂා කරන්න.',
+    'No location albums yet. Scan your photos to look for GPS metadata.': 'තවම ස්ථාන ඇල්බම නැත. GPS දත්ත සොයා ගැනීමට ඡායාරූප පරීක්ෂා කරන්න.',
+    'Uses GPS coordinates embedded in photo metadata. Photos without GPS data cannot be assigned a real location.': 'ඡායාරූපවල metadata තුළ ඇති GPS ඛණ්ඩාංක භාවිත කරයි. GPS දත්ත නැති ඡායාරූපවලට සැබෑ ස්ථානයක් ලබාදිය නොහැක.',
+    'Privacy: GPS metadata is processed locally. Opening the map loads map tiles from OpenStreetMap.': 'පෞද්ගලිකත්වය: GPS දත්ත දුරකථනය තුළම සකසයි. සිතියම විවෘත කළ විට OpenStreetMap සිතියම් දත්ත ලබාගනී.',
+    'Map tiles © OpenStreetMap contributors. Exact coordinates remain in this app; place-name lookup is optional.': 'සිතියම් දත්ත © OpenStreetMap දායකයන්. නිවැරදි GPS ඛණ්ඩාංක යෙදුම තුළම පවතින අතර ස්ථාන නාම සෙවීම විකල්පයකි.',
     'Home': 'මුල් පිටුව',
     'Files': 'ගොනු',
     'Use fewer bubbles and less motion work': 'බුබුළු සහ සජීවීකරණ අඩු කර ක්‍රියාකාරිත්වය වැඩි කරන්න',
@@ -238,4 +253,45 @@ class AppLanguage {
     'Scan accessible photos': 'ප්‍රවේශ විය හැකි ඡායාරූප පරීක්ෂා කරන්න',
     'Temporary face groups cleared from memory.': 'තාවකාලික මුහුණු කණ්ඩායම් මතකයෙන් ඉවත් කරන ලදී.',
   };
+}
+
+
+/// Shows a language picker that can be used from any feature page.
+Future<String?> showAppLanguageDialog(
+  BuildContext context, {
+  required Color accent,
+}) {
+  return showDialog<String>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: Text(AppLanguage.text('Choose your language')),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          ListTile(
+            leading: const Text('සි'),
+            title: const Text('සිංහල'),
+            trailing: AppLanguage.isSinhala
+                ? Icon(Icons.check_circle, color: accent)
+                : null,
+            onTap: () => Navigator.pop(dialogContext, 'si'),
+          ),
+          ListTile(
+            leading: const Text('En'),
+            title: const Text('English'),
+            trailing: !AppLanguage.isSinhala
+                ? Icon(Icons.check_circle, color: accent)
+                : null,
+            onTap: () => Navigator.pop(dialogContext, 'en'),
+          ),
+        ],
+      ),
+      actions: <Widget>[
+        TextButton(
+          onPressed: () => Navigator.pop(dialogContext),
+          child: Text(AppLanguage.text('Cancel')),
+        ),
+      ],
+    ),
+  );
 }
