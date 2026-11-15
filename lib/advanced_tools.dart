@@ -9,7 +9,7 @@ import 'app_language.dart';
 import 'ai_assistant.dart';
 import 'location_albums.dart';
 import 'package:cryptography/cryptography.dart';
-import 'package:crypto/crypto.dart' as hashes;
+import 'vault_credentials.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -168,7 +168,7 @@ class _AquaAdvancedToolsState extends State<AquaAdvancedTools> {
       recoveryAnswerController.dispose();
       return true;
     }
-    final digest = hashes.sha256.convert(utf8.encode('$salt:$pin')).toString();
+    final digest = VaultCredentials.digest(salt ?? '', pin);
     pinController.dispose();
     confirmController.dispose();
     recoveryQuestionController.dispose();
@@ -260,9 +260,10 @@ class _AquaAdvancedToolsState extends State<AquaAdvancedTools> {
       answerController.dispose();
       return false;
     }
-    final answerDigest = hashes.sha256.convert(
-      utf8.encode('$recoverySalt:${_normaliseRecoveryAnswer(answerController.text)}'),
-    ).toString();
+    final answerDigest = VaultCredentials.digest(
+      recoverySalt,
+      _normaliseRecoveryAnswer(answerController.text),
+    );
     answerController.dispose();
 
     if (answerDigest != recoveryHash) {
