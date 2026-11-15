@@ -5,16 +5,18 @@ import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
 import 'face_albums.dart';
+import 'app_language.dart';
+import 'ai_assistant.dart';
 import 'location_albums.dart';
 import 'package:cryptography/cryptography.dart';
-import 'package:crypto/crypto.dart' as hashes;
+import 'vault_credentials.dart';
+import 'vault_ice_screen.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:local_auth/local_auth.dart';
 import 'package:path_provider/path_provider.dart';
 
 class AquaAdvancedTools extends StatefulWidget {
@@ -22,10 +24,12 @@ class AquaAdvancedTools extends StatefulWidget {
     super.key,
     required this.targetDirectory,
     required this.accent,
+    required this.onLanguageChanged,
     this.openVaultOnStart = false,
   });
   final Directory targetDirectory;
   final Color accent;
+  final Future<void> Function(String language) onLanguageChanged;
   final bool openVaultOnStart;
 
   @override
@@ -49,7 +53,6 @@ class _AquaAdvancedToolsState extends State<AquaAdvancedTools> {
       });
     }
   }
-  final _auth = LocalAuthentication();
   bool _busy = false;
   String _status = 'Choose a tool to begin.';
   List<File> _vaultFiles = <File>[];
@@ -58,8 +61,52 @@ class _AquaAdvancedToolsState extends State<AquaAdvancedTools> {
   Map<String, dynamic>? _deviceDiagnostics;
   String _performanceSummary = '';
 
+  String _localizedStatus(String value) {
+    if (!AppLanguage.isSinhala) return value;
+    const prefixes = <String, String>{
+      'Vault encryption failed: ': 'Vault සංකේතනය අසාර්ථකයි: ',
+      'Vault decryption failed: ': 'Vault විකේතනය අසාර්ථකයි: ',
+      'ZIP creation failed: ': 'ZIP නිර්මාණය අසාර්ථකයි: ',
+      'ZIP extraction failed: ': 'ZIP විහිදුවීම අසාර්ථකයි: ',
+      'Device diagnostics unavailable: ': 'උපාංග පරීක්ෂණ තොරතුරු ලබාගත නොහැක: ',
+      'Face scan could not finish: ': 'මුහුණු පරීක්ෂාව අවසන් කළ නොහැකි විය: ',
+    };
+    for (final entry in prefixes.entries) {
+      if (value.startsWith(entry.key)) return entry.value + value.substring(entry.key.length);
+    }
+    if (value.startsWith('Smart Cleanup scanned up to ')) {
+      final match = RegExp(r'Smart Cleanup scanned up to (\d+) files.*found (\d+) large or older files').firstMatch(value);
+      if (match != null) {
+        return 'Smart Cleanup මඟින් ගොනු ${match.group(1)}ක් පරීක්ෂා කර විශාල හෝ පැරණි ගොනු ${match.group(2)}ක් සොයාගත්තා. කිසිවක් මකා නැත.';
+      }
+    }
+    if (value.startsWith('Imported ')) {
+      final match = RegExp(r'Imported (\d+) file\(s\)').firstMatch(value);
+      if (match != null) return 'ගොනු ${match.group(1)}ක් Android ගොනු තේරීමේ මෙවලමෙන් ආයාත කළා.';
+    }
+    const messages = <String, String>{
+      'Create a Vault PIN first.': 'පළමුව Vault මුරපදයක් සාදන්න.',
+      'Use a password of at least 6 characters, confirm it, and enter your own recovery question and answer.': 'අවම වශයෙන් අක්ෂර 6ක මුරපදයක් ඇතුළත් කර තහවුරු කරන්න. ඔබ කැමති ප්‍රතිසාධන ප්‍රශ්නය සහ පිළිතුරද සකසන්න.',
+      'Encrypted Vault created. Keep your password and recovery answer private.': 'සංකේතනය කළ Vault එක සාදා ඇත. ඔබගේ මුරපදය සහ ප්‍රතිසාධන පිළිතුර රහසිගතව තබාගන්න.',
+      'Incorrect password.': 'මුරපදය වැරදියි.',
+      'A recovery question and answer are required to finish Vault sign-in.': 'Vault එකට ඇතුළුවීම සම්පූර්ණ කිරීමට ප්‍රතිසාධන ප්‍රශ්නයක් සහ පිළිතුරක් අවශ්‍යයි.',
+      'Password must be at least 6 characters and both entries must match.': 'මුරපදය අවම වශයෙන් අක්ෂර 6ක් විය යුතු අතර ඇතුළත් කිරීම් දෙක ගැළපිය යුතුය.',
+      'Vault password changed successfully.': 'Vault මුරපදය සාර්ථකව වෙනස් කරන ලදී.',
+      'File encrypted and added to Vault.': 'ගොනුව සංකේතනය කර Vault එකට එක් කළා.',
+      'Decrypted file exported to the selected folder.': 'විකේතනය කළ ගොනුව තෝරාගත් ෆෝල්ඩරයට අපනයනය කළා.',
+      'ZIP created in the current Aqua folder. Files over 100 MB were skipped for low-memory safety.': 'වත්මන් Aqua ෆෝල්ඩරයේ ZIP ගොනුව සාදා ඇත. අඩු මතක භාවිතය සඳහා 100 MB ඉක්මවූ ගොනු මඟහැරුණි.',
+      'ZIP extraction completed in the selected folder.': 'තෝරාගත් ෆෝල්ඩරයට ZIP ගොනුව විහිදුවීම අවසන්.',
+      'Checking Android storage access, removable volumes and runtime performance…': 'Android ගබඩා ප්‍රවේශය, ඉවත් කළ හැකි ගබඩා සහ ක්‍රියාකාරිත්වය පරීක්ෂා කරමින්…',
+      'Device diagnostics completed. Physical USB/SD access still needs a real-device check.': 'උපාංග පරීක්ෂාව අවසන්. USB/SD ප්‍රවේශය සැබෑ දුරකථනයක පරීක්ෂා කළ යුතුයි.',
+      'Scan your accessible photo folders to create private, on-device people albums.': 'ඔබගේ ප්‍රවේශ විය හැකි ඡායාරූප ෆෝල්ඩර පරීක්ෂා කර උපාංගය තුළම පුද්ගල ඇල්බම සාදන්න.',
+      'Checking photo access…': 'ඡායාරූප ප්‍රවේශය පරීක්ෂා කරමින්…',
+      'Preparing offline face model…': 'අන්තර්ජාලය නොමැති මුහුණු ආකෘතිය සූදානම් කරමින්…',
+    };
+    return messages[value] ?? AppLanguage.text(value);
+  }
+
   void _say(String value) {
-    if (mounted) setState(() => _status = value);
+    if (mounted) setState(() => _status = _localizedStatus(value));
   }
 
   Future<Directory> _vaultDirectory() async {
@@ -81,9 +128,10 @@ class _AquaAdvancedToolsState extends State<AquaAdvancedTools> {
   Future<String> _saltedDigest(String value) async {
     final random = math.Random.secure();
     final salt = base64Encode(List<int>.generate(16, (_) => random.nextInt(256)));
-    final digest = hashes.sha256.convert(utf8.encode('$salt:$value')).toString();
+    final digest = VaultCredentials.digest(salt, value);
     return '$salt:$digest';
   }
+
 
   Future<bool> _verifyPin({bool setup = false}) async {
     final pinController = TextEditingController();
@@ -99,26 +147,26 @@ class _AquaAdvancedToolsState extends State<AquaAdvancedTools> {
     final result = await showDialog<String>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text(storedHash == null ? 'Create Vault PIN' : 'Unlock Vault'),
+        title: Text(AppLanguage.text(storedHash == null ? 'Create Vault PIN' : 'Unlock Vault')),
         content: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
-          TextField(controller: pinController, obscureText: true, keyboardType: TextInputType.number,
-            decoration: const InputDecoration(labelText: 'PIN (at least 6 digits)')),
+          TextField(controller: pinController, obscureText: true, keyboardType: TextInputType.visiblePassword,
+            decoration: InputDecoration(labelText: AppLanguage.text('Password (at least 6 characters)'))),
           if (storedHash == null) ...[
-            TextField(controller: confirmController, obscureText: true, keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Confirm PIN')),
+            TextField(controller: confirmController, obscureText: true, keyboardType: TextInputType.visiblePassword,
+              decoration: InputDecoration(labelText: AppLanguage.text('Confirm password'))),
             TextField(controller: recoveryQuestionController,
-              decoration: const InputDecoration(labelText: 'Your recovery question')),
+              decoration: InputDecoration(labelText: AppLanguage.text('Your recovery question'))),
             TextField(controller: recoveryAnswerController, obscureText: true,
-              decoration: const InputDecoration(labelText: 'Your answer')),
+              decoration: InputDecoration(labelText: AppLanguage.text('Your answer'))),
           ],
         ])),
         actions: [
           if (storedHash != null)
             TextButton(onPressed: () => Navigator.pop(dialogContext, 'recover'),
-              child: const Text('Forgot PIN?')),
-          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
+              child: Text(AppLanguage.text('Forgot password?'))),
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: Text(AppLanguage.text('Cancel'))),
           FilledButton(onPressed: () => Navigator.pop(dialogContext, 'pin'),
-            child: const Text('Continue')),
+            child: Text(AppLanguage.text('Continue'))),
         ],
       ),
     );
@@ -143,7 +191,7 @@ class _AquaAdvancedToolsState extends State<AquaAdvancedTools> {
       final question = recoveryQuestionController.text.trim();
       final answer = _normaliseRecoveryAnswer(recoveryAnswerController.text);
       if (pin.length < 6 || pin != confirmController.text || question.length < 5 || answer.length < 2) {
-        _say('Use a PIN of at least 6 digits, confirm it, and enter your own recovery question and answer.');
+        _say('Use a password of at least 6 characters, confirm it, and enter your own recovery question and answer.');
         pinController.dispose();
         confirmController.dispose();
         recoveryQuestionController.dispose();
@@ -160,20 +208,20 @@ class _AquaAdvancedToolsState extends State<AquaAdvancedTools> {
       await _secure.write(key: 'aqua_vault_recovery_salt', value: answerRecord.split(':').first);
       await _secure.write(key: 'aqua_vault_recovery_hash', value: answerRecord.split(':').last);
       await _secure.write(key: 'aqua_vault_key', value: base64Encode(keyBytes));
-      _say('Encrypted Vault created. Keep your PIN and recovery answer private.');
+      _say('Encrypted Vault created. Keep your password and recovery answer private.');
       pinController.dispose();
       confirmController.dispose();
       recoveryQuestionController.dispose();
       recoveryAnswerController.dispose();
       return true;
     }
-    final digest = hashes.sha256.convert(utf8.encode('$salt:$pin')).toString();
+    final digest = VaultCredentials.digest(salt ?? '', pin);
     pinController.dispose();
     confirmController.dispose();
     recoveryQuestionController.dispose();
       recoveryAnswerController.dispose();
     if (digest != storedHash) {
-      _say('Incorrect PIN.');
+      _say('Incorrect password.');
       return false;
     }
     return _setRecoveryAnswerIfMissing();
@@ -189,17 +237,17 @@ class _AquaAdvancedToolsState extends State<AquaAdvancedTools> {
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Set up PIN recovery'),
+        title: Text(AppLanguage.text('Set up password recovery')),
         content: Column(mainAxisSize: MainAxisSize.min, children: [
-          const Text('Create your own question and answer. Choose an answer that is private and difficult for others to guess.'),
+          Text(AppLanguage.text('Create your own question and answer. Choose an answer that is private and difficult for others to guess.')),
           TextField(controller: questionController,
-            decoration: const InputDecoration(labelText: 'Your recovery question')),
+            decoration: InputDecoration(labelText: AppLanguage.text('Your recovery question'))),
           TextField(controller: answerController, obscureText: true,
-            decoration: const InputDecoration(labelText: 'Your answer')),
+            decoration: InputDecoration(labelText: AppLanguage.text('Your answer'))),
         ]),
         actions: [
           FilledButton(onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Save recovery answer')),
+            child: Text(AppLanguage.text('Save recovery answer'))),
         ],
       ),
     );
@@ -220,93 +268,138 @@ class _AquaAdvancedToolsState extends State<AquaAdvancedTools> {
 
   Future<bool> _recoverPin() async {
     final answerController = TextEditingController();
-    final newPinController = TextEditingController();
-    final confirmController = TextEditingController();
     final recoveryQuestion = await _secure.read(key: 'aqua_vault_recovery_question');
     final recoverySalt = await _secure.read(key: 'aqua_vault_recovery_salt');
     final recoveryHash = await _secure.read(key: 'aqua_vault_recovery_hash');
     if (recoveryQuestion == null || recoverySalt == null || recoveryHash == null) {
-      _say('Recovery is not configured on this Vault. Unlock with your PIN and set a recovery question first.');
+      _say(AppLanguage.text('Recovery is not configured. Unlock with your current password and set a recovery question first.'));
       answerController.dispose();
-      newPinController.dispose();
-      confirmController.dispose();
       return false;
     }
+
     final result = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Recover Vault PIN'),
-        content: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
+        title: Text(AppLanguage.text('Forgot password?')),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
           Text(recoveryQuestion),
-          TextField(controller: answerController, obscureText: true,
-            decoration: const InputDecoration(labelText: 'Your answer')),
-          TextField(controller: newPinController, obscureText: true, keyboardType: TextInputType.number,
-            decoration: const InputDecoration(labelText: 'New PIN (at least 6 digits)')),
-          TextField(controller: confirmController, obscureText: true, keyboardType: TextInputType.number,
-            decoration: const InputDecoration(labelText: 'Confirm new PIN')),
-        ])),
+          TextField(
+            controller: answerController,
+            obscureText: true,
+            textInputAction: TextInputAction.done,
+            decoration: InputDecoration(labelText: AppLanguage.text('Your answer')),
+          ),
+        ]),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Reset PIN')),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(AppLanguage.text('Cancel')),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(AppLanguage.text('Verify answer')),
+          ),
         ],
       ),
     );
+
     if (result != true) {
       answerController.dispose();
-      newPinController.dispose();
-      confirmController.dispose();
       return false;
     }
-    final answerDigest = hashes.sha256.convert(
-      utf8.encode('$recoverySalt:${_normaliseRecoveryAnswer(answerController.text)}'),
-    ).toString();
-    final newPin = newPinController.text;
-    if (answerDigest != recoveryHash || newPin.length < 6 || newPin != confirmController.text) {
-      _say('Recovery answer or new PIN is invalid. Try again.');
-      answerController.dispose();
-      newPinController.dispose();
-      confirmController.dispose();
-      return false;
-    }
-    final pinRecord = await _saltedDigest(newPin);
-    await _secure.write(key: 'aqua_vault_pin_salt', value: pinRecord.split(':').first);
-    await _secure.write(key: 'aqua_vault_pin_hash', value: pinRecord.split(':').last);
-    _say('PIN reset successfully. Your encrypted Vault files are unchanged.');
+    final answerDigest = VaultCredentials.digest(
+      recoverySalt,
+      _normaliseRecoveryAnswer(answerController.text),
+    );
     answerController.dispose();
-    newPinController.dispose();
-    confirmController.dispose();
+
+    if (answerDigest != recoveryHash) {
+      _say(AppLanguage.text('That recovery answer is incorrect.'));
+      return false;
+    }
+
+    _say(AppLanguage.text('Recovery answer accepted. Vault unlocked. You can change your password inside the Vault.'));
     return true;
   }
 
+  Future<void> _changeRecoveryDetails() async {
+    final questionController = TextEditingController(
+      text: await _secure.read(key: 'aqua_vault_recovery_question') ?? '',
+    );
+    final answerController = TextEditingController();
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(AppLanguage.text('Change recovery question / answer')),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          TextField(
+            controller: questionController,
+            textCapitalization: TextCapitalization.sentences,
+            decoration: InputDecoration(labelText: AppLanguage.text('Your recovery question')),
+          ),
+          TextField(
+            controller: answerController,
+            obscureText: true,
+            decoration: InputDecoration(labelText: AppLanguage.text('New recovery answer')),
+          ),
+        ]),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(AppLanguage.text('Cancel')),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(AppLanguage.text('Save recovery details')),
+          ),
+        ],
+      ),
+    );
+
+    final question = questionController.text.trim();
+    final answer = _normaliseRecoveryAnswer(answerController.text);
+    questionController.dispose();
+    answerController.dispose();
+    if (result != true) return;
+    if (question.length < 5 || answer.length < 2) {
+      _say(AppLanguage.text('Enter a recovery question of at least 5 characters and an answer of at least 2 characters.'));
+      return;
+    }
+    final record = await _saltedDigest(answer);
+    await _secure.write(key: 'aqua_vault_recovery_question', value: question);
+    await _secure.write(key: 'aqua_vault_recovery_salt', value: record.split(':').first);
+    await _secure.write(key: 'aqua_vault_recovery_hash', value: record.split(':').last);
+    _say(AppLanguage.text('Recovery question and answer updated.'));
+  }
+
   Future<void> _changePin() async {
-    if (!await _verifyPin()) return;
     final newPinController = TextEditingController();
     final confirmController = TextEditingController();
     final result = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Change Vault PIN'),
+        title: Text(AppLanguage.text('Change Vault password')),
         content: Column(mainAxisSize: MainAxisSize.min, children: [
-          TextField(controller: newPinController, obscureText: true, keyboardType: TextInputType.number,
-            decoration: const InputDecoration(labelText: 'New PIN (at least 6 digits)')),
-          TextField(controller: confirmController, obscureText: true, keyboardType: TextInputType.number,
-            decoration: const InputDecoration(labelText: 'Confirm new PIN')),
+          TextField(controller: newPinController, obscureText: true, keyboardType: TextInputType.visiblePassword,
+            decoration: InputDecoration(labelText: AppLanguage.text('New password (at least 6 characters)'))),
+          TextField(controller: confirmController, obscureText: true, keyboardType: TextInputType.visiblePassword,
+            decoration: InputDecoration(labelText: AppLanguage.text('Confirm new password'))),
         ]),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Save PIN')),
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: Text(AppLanguage.text('Cancel'))),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: Text(AppLanguage.text('Save password'))),
         ],
       ),
     );
     if (result == true) {
       final pin = newPinController.text;
       if (pin.length < 6 || pin != confirmController.text) {
-        _say('PIN must be at least 6 digits and both entries must match.');
+        _say('Password must be at least 6 characters and both entries must match.');
       } else {
         final pinRecord = await _saltedDigest(pin);
         await _secure.write(key: 'aqua_vault_pin_salt', value: pinRecord.split(':').first);
         await _secure.write(key: 'aqua_vault_pin_hash', value: pinRecord.split(':').last);
-        _say('Vault PIN changed successfully.');
+        _say('Vault password changed successfully.');
       }
     }
     newPinController.dispose();
@@ -314,31 +407,10 @@ class _AquaAdvancedToolsState extends State<AquaAdvancedTools> {
   }
 
   Future<bool> _unlockVault() async {
-    final hasPin = await _secure.read(key: 'aqua_vault_pin_hash') != null;
-    if (!hasPin) return _verifyPin(setup: true);
-    final useBiometric = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Unlock encrypted Vault'),
-        content: const Text('Use device authentication, or enter your Vault PIN.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Use PIN')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Fingerprint / device')),
-        ],
-      ),
-    );
-    if (useBiometric == true) {
-      try {
-        final available = await _auth.canCheckBiometrics || await _auth.isDeviceSupported();
-        if (available && await _auth.authenticate(
-          localizedReason: 'Authenticate to open your encrypted Aqua Vault',
-          options: const AuthenticationOptions(biometricOnly: false, stickyAuth: true),
-        )) return true;
-      } catch (_) {}
-      _say('Device authentication was unavailable or cancelled. Use your PIN.');
-      return false;
-    }
-    return _verifyPin();
+    final hasPassword = await _secure.read(key: 'aqua_vault_pin_hash') != null;
+    // The Vault always requires its own password. Device biometrics must not
+    // bypass the password prompt or the configured recovery flow.
+    return _verifyPin(setup: !hasPassword);
   }
 
   Future<void> _openVault() async {
@@ -346,36 +418,17 @@ class _AquaAdvancedToolsState extends State<AquaAdvancedTools> {
     await _vaultDirectory();
     await _refreshVault();
     if (!mounted) return;
-    await showModalBottomSheet<void>(
-      context: context, isScrollControlled: true, backgroundColor: const Color(0xFF102B38),
-      builder: (context) => SafeArea(child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: SizedBox(height: MediaQuery.of(context).size.height * .65,
-          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('Encrypted Secret Vault', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 8),
-            const Text('Files are stored encrypted with AES-256-GCM.', style: TextStyle(color: Colors.white70)),
-            const SizedBox(height: 12),
-            FilledButton.icon(onPressed: () async { Navigator.pop(context); await _addToVault(); },
-              icon: const Icon(Icons.add), label: const Text('Encrypt a file into Vault')),
-            OutlinedButton.icon(
-              onPressed: _busy ? null : _changePin,
-              icon: const Icon(Icons.password),
-              label: const Text('Change Vault PIN'),
-            ),
-            Expanded(child: _vaultFiles.isEmpty
-              ? const Center(child: Text('Vault is empty.'))
-              : ListView(children: _vaultFiles.map((file) => ListTile(
-                  leading: const Icon(Icons.lock, color: Colors.cyanAccent),
-                  title: Text(file.uri.pathSegments.last, maxLines: 1, overflow: TextOverflow.ellipsis),
-                  trailing: IconButton(icon: const Icon(Icons.save_alt), onPressed: () async {
-                    Navigator.pop(context);
-                    await _exportFromVault(file);
-                  }),
-                )).toList())),
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
-          ])),
-      )),
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(
+        builder: (_) => VaultIceScreen(
+          files: List<File>.unmodifiable(_vaultFiles),
+          busy: _busy,
+          onImport: () => _addToVault(alreadyUnlocked: true),
+          onExport: (file) => _exportFromVault(file, alreadyUnlocked: true),
+          onChangePassword: _changePin,
+          onChangeRecovery: _changeRecoveryDetails,
+        ),
+      ),
     );
   }
 
@@ -385,8 +438,8 @@ class _AquaAdvancedToolsState extends State<AquaAdvancedTools> {
     if (mounted) setState(() => _vaultFiles = files);
   }
 
-  Future<void> _addToVault() async {
-    if (!await _unlockVault()) return;
+  Future<void> _addToVault({bool alreadyUnlocked = false}) async {
+    if (!alreadyUnlocked && !await _unlockVault()) return;
     final picked = await FilePicker.platform.pickFiles(withData: false);
     final path = picked?.files.single.path;
     if (path == null) return;
@@ -415,8 +468,8 @@ class _AquaAdvancedToolsState extends State<AquaAdvancedTools> {
     }
   }
 
-  Future<void> _exportFromVault(File encryptedFile) async {
-    if (!await _unlockVault()) return;
+  Future<void> _exportFromVault(File encryptedFile, {bool alreadyUnlocked = false}) async {
+    if (!alreadyUnlocked && !await _unlockVault()) return;
     final destination = await FilePicker.platform.getDirectoryPath();
     if (destination == null) return;
     try {
@@ -557,9 +610,9 @@ class _AquaAdvancedToolsState extends State<AquaAdvancedTools> {
         child: SizedBox(
           height: MediaQuery.of(context).size.height * .72,
           child: Column(children: [
-            const Padding(
+            Padding(
               padding: EdgeInsets.all(14),
-              child: Text('Photo locations', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              child: Text(AppLanguage.text('Photo locations'), style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             ),
             Expanded(child: FlutterMap(
               options: MapOptions(
@@ -579,9 +632,9 @@ class _AquaAdvancedToolsState extends State<AquaAdvancedTools> {
                 )).toList()),
               ],
             )),
-            const Padding(
+            Padding(
               padding: EdgeInsets.all(8),
-              child: Text('Map data © OpenStreetMap contributors',
+              child: Text(AppLanguage.text('Map data © OpenStreetMap contributors'),
                 style: TextStyle(fontSize: 10, color: Colors.white60)),
             ),
           ]),
@@ -646,15 +699,15 @@ class _AquaAdvancedToolsState extends State<AquaAdvancedTools> {
   Widget _toolCard(String title, String subtitle, IconData icon, VoidCallback action) =>
     Card(color: const Color(0xFF12313F).withOpacity(.92), child: ListTile(
       leading: Icon(icon, color: widget.accent, size: 28),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
-      subtitle: Text(subtitle, style: const TextStyle(color: Colors.white70, fontSize: 11)),
+      title: Text(AppLanguage.text(title), style: const TextStyle(fontWeight: FontWeight.w700)),
+      subtitle: Text(AppLanguage.text(subtitle), style: const TextStyle(color: Colors.white70, fontSize: 11)),
       trailing: const Icon(Icons.chevron_right),
       onTap: _busy ? null : action,
     ));
 
   Widget _diagnosticRow(String label, String value) => ListTile(
     dense: true,
-    title: Text(label, style: const TextStyle(fontSize: 12, color: Colors.white70)),
+    title: Text(AppLanguage.text(label), style: const TextStyle(fontSize: 12, color: Colors.white70)),
     subtitle: Text(value, style: const TextStyle(fontSize: 11)),
   );
 
@@ -674,11 +727,17 @@ class _AquaAdvancedToolsState extends State<AquaAdvancedTools> {
   @override
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: const Color(0xFF071E2A),
-    appBar: AppBar(title: const Text('Aqua Advanced Tools'), backgroundColor: Colors.transparent),
+    appBar: AppBar(title: Text(AppLanguage.text('Aqua Advanced Tools')), backgroundColor: Colors.transparent),
     body: ListView(padding: const EdgeInsets.all(16), children: [
       if (_busy) const LinearProgressIndicator(),
       Text(_status, style: const TextStyle(color: Colors.white70)),
       const SizedBox(height: 12),
+      _toolCard('AI Assistant', 'Open the built-in assistant for file-manager help and guidance', Icons.auto_awesome_rounded, () {
+        Navigator.of(context).push(MaterialPageRoute<void>(
+          builder: (_) => AquaAiAssistantPage(accent: widget.accent),
+        ));
+      }),
+      _toolCard('Secret Vault', 'Open the encrypted Vault, create or unlock it with your PIN, and manage protected files', Icons.lock, _openVault),
       _toolCard('Create ZIP', 'Compress selected files into one archive', Icons.archive, _createZip),
       _toolCard('Extract ZIP', 'Extract an archive with path-traversal checks', Icons.unarchive, _extractZip),
       _toolCard('Location Albums', 'Group phone photos by embedded GPS location and view them on a map', Icons.location_on, () {
@@ -686,19 +745,20 @@ class _AquaAdvancedToolsState extends State<AquaAdvancedTools> {
           builder: (_) => LocationAlbumsPage(
             targetDirectory: widget.targetDirectory,
             accent: widget.accent,
+            onLanguageChanged: widget.onLanguageChanged,
           ),
         ));
       }),
       if (_geoPhotos.isNotEmpty) ...[
         const SizedBox(height: 8),
-        Text('Photo locations (${_geoPhotos.length})', style: const TextStyle(fontWeight: FontWeight.bold)),
+        Text(AppLanguage.text('Photo locations') + ' (${_geoPhotos.length})', style: const TextStyle(fontWeight: FontWeight.bold)),
         ..._geoGroups.entries.map((entry) => Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ListTile(
               leading: const Icon(Icons.place, color: Colors.cyanAccent),
-              title: Text('Location group • ${entry.value.length} photo(s)'),
-              subtitle: Text('Approx. ${entry.key}'),
+              title: Text((AppLanguage.isSinhala ? 'ස්ථාන කණ්ඩායම • ' : 'Location group • ') + '${entry.value.length} ඡායාරූප'),
+              subtitle: Text((AppLanguage.isSinhala ? 'ආසන්න වශයෙන් ' : 'Approx. ') + entry.key),
               trailing: IconButton(icon: const Icon(Icons.map), onPressed: () => _openMap(entry.value.first)),
             ),
             ...entry.value.map((photo) => Padding(
@@ -712,7 +772,7 @@ class _AquaAdvancedToolsState extends State<AquaAdvancedTools> {
       _toolCard('Smart Cleanup suggestions', 'Find large and older files; never delete automatically', Icons.cleaning_services, _smartCleanup),
       if (_cleanupSuggestions.isNotEmpty) ...[
         const SizedBox(height: 8),
-        Text('Review suggestions (${_cleanupSuggestions.length})', style: const TextStyle(fontWeight: FontWeight.bold)),
+        Text(AppLanguage.text('Review suggestions') + ' (${_cleanupSuggestions.length})', style: const TextStyle(fontWeight: FontWeight.bold)),
         ..._cleanupSuggestions.take(100).map((file) => ListTile(
           leading: const Icon(Icons.insert_drive_file_outlined),
           title: Text(file.uri.pathSegments.last, maxLines: 1, overflow: TextOverflow.ellipsis),
@@ -737,16 +797,17 @@ class _AquaAdvancedToolsState extends State<AquaAdvancedTools> {
           child: Text(_performanceSummary, style: const TextStyle(color: Colors.white70, fontSize: 11))),
       ],
       _toolCard('Import from SD card / USB', 'Use Android system picker to select files from removable storage', Icons.usb, _importExternal),
-      _toolCard('Face Similarity / Person Albums', 'Find similar faces locally and review possible people groups', Icons.face_retouching_natural, () {
+      _toolCard('Face Albums (on-device)', 'Group visually similar faces locally; review every suggested match', Icons.face_retouching_natural, () {
         Navigator.of(context).push(MaterialPageRoute<void>(
           builder: (_) => FaceAlbumsPage(
             targetDirectory: widget.targetDirectory,
             accent: widget.accent,
+            onLanguageChanged: widget.onLanguageChanged,
           ),
         ));
       }),
       const SizedBox(height: 12),
-      const Text('Privacy: photo GPS metadata is processed locally. Map tiles are requested from OpenStreetMap only when you open a map. Encrypted private files stay on this device; keep authentication details safe.', style: TextStyle(color: Colors.white54, fontSize: 11)),
+      Text(AppLanguage.text('Privacy: photo GPS metadata is processed locally. Map tiles are requested from OpenStreetMap only when you open a map. Encrypted private files stay on this device; keep authentication details safe.'), style: const TextStyle(color: Colors.white54, fontSize: 11)),
     ]),
   );
 }

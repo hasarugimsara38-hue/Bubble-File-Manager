@@ -4,7 +4,7 @@ import 'dart:math' as math;
 
 import 'package:face_detection_tflite/face_detection_tflite.dart' as face_ml;
 import 'package:flutter/material.dart';
-import 'package:open_filex/open_filex.dart';
+import 'app_language.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 /// On-device, temporary face-similarity albums.
@@ -14,10 +14,12 @@ class FaceAlbumsPage extends StatefulWidget {
     super.key,
     required this.targetDirectory,
     required this.accent,
+    required this.onLanguageChanged,
   });
 
   final Directory targetDirectory;
   final Color accent;
+  final Future<void> Function(String language) onLanguageChanged;
 
   @override
   State<FaceAlbumsPage> createState() => _FaceAlbumsPageState();
@@ -27,14 +29,17 @@ class _FaceAlbumsPageState extends State<FaceAlbumsPage> {
   static const int _maxImages = 1200;
   static const int _maxDirectories = 5000;
   static const int _maxFileBytes = 12 * 1024 * 1024;
-  static const double _matchThreshold = 0.62;
-  static const double _minimumMatchMargin = 0.08;
+  // A 0.60 cosine score is a conservative threshold for a possible match.
+  // The margin prevents ambiguous faces from being silently combined.
+  static const double _matchThreshold = 0.60;
+  static const double _minimumMatchMargin = 0.06;
 
   bool _busy = false;
   String _status = 'Scan your accessible photo folders to create private, on-device people albums.';
   double _progress = 0;
   int _processed = 0;
   int _skipped = 0;
+  int _detectedFaces = 0;
   List<_PersonCluster> _groups = <_PersonCluster>[];
   final List<({ _PersonCluster group, String path })> _undoRemovals = [];
 
@@ -125,6 +130,56 @@ class _FaceAlbumsPageState extends State<FaceAlbumsPage> {
     return dot / (math.sqrt(normA) * math.sqrt(normB));
   }
 
+  // Compare the representative average and the closest saved sample.
+  double _clusterSimilarity(_PersonCluster cluster, List<double> embedding) {
+    if (cluster.samples.isEmpty) return -1;
+    final dimensions = embedding.length;
+    if (dimensions == 0 ||
+        cluster.samples.any((sample) => sample.length != dimensions)) {
+      return -1;
+    }
+    final centroid = List<double>.filled(dimensions, 0);
+    var bestSample = -1.0;
+    for (final sample in cluster.samples) {
+      for (var i = 0; i < dimensions; i++) {
+        centroid[i] += sample[i] / cluster.samples.length;
+      }
+      bestSample = math.max(bestSample, _cosine(sample, embedding)).toDouble();
+    }
+    final centroidScore = _cosine(centroid, embedding);
+    if (centroidScore < 0 || bestSample < 0) return -1;
+    return centroidScore * 0.7 + bestSample * 0.3;
+  }
+
+  Future<void> _changeLanguage() async {
+    final selected = await showAppLanguageDialog(context, accent: widget.accent);
+    if (selected == null) return;
+    await widget.onLanguageChanged(selected);
+    if (mounted) setState(() {});
+  }
+
+  String get _displayStatus {
+    if (!AppLanguage.isSinhala) return _status;
+    if (_status == 'Checking photo access…') return 'ඡායාරූප ප්‍රවේශය පරීක්ෂා කරමින්…';
+    if (_status == 'Preparing offline face model…') return 'අන්තර්ජාලය නොමැති මුහුණු ආකෘතිය සූදානම් කරමින්…';
+    if (_status.startsWith('Analysing photo ')) {
+      return 'ඡායාරූප ' + _status.replaceFirst('Analysing photo ', '').replaceAll(' of ', 'න් ') + ' පරීක්ෂා කරමින්…';
+    }
+    if (_status.startsWith('Finished:')) {
+      final result = RegExp(r'Finished: (\d+) possible people groups from (\d+) photos').firstMatch(_status);
+      if (result != null) {
+        return 'ඡායාරූප ${result.group(2)}කින් විය හැකි පුද්ගල කණ්ඩායම් ${result.group(1)}ක් හමු විය. ගැළපීම් ඔබම පරීක්ෂා කරන්න.';
+      }
+    }
+    if (_status.startsWith('Detected ')) {
+      return 'ඡායාරූප $_processedක මුහුණු $_detectedFacesක් හඳුනාගත් නමුත් නැවත හමුවූ මුහුණු කණ්ඩායම් හමු නොවීය. එකම පුද්ගලයා පැහැදිලිව පෙනෙන ඡායාරූප කිහිපයක් භාවිත කරන්න.';
+    }
+    if (_status.startsWith('Face scan could not finish:')) {
+      return 'මුහුණු පරීක්ෂාව අවසන් කළ නොහැකි විය: ' + _status.substring('Face scan could not finish:'.length).trim();
+    }
+    return AppLanguage.text(_status);
+  }
+
   Future<void> _startScan() async {
     if (_busy) return;
     setState(() {
@@ -132,6 +187,7 @@ class _FaceAlbumsPageState extends State<FaceAlbumsPage> {
       _progress = 0;
       _processed = 0;
       _skipped = 0;
+      _detectedFaces = 0;
       _groups = <_PersonCluster>[];
       _undoRemovals.clear();
       _status = 'Checking photo access…';
@@ -157,7 +213,12 @@ class _FaceAlbumsPageState extends State<FaceAlbumsPage> {
       if (mounted) {
         setState(() => _status = 'Preparing offline face model…');
       }
-      detector = await face_ml.FaceDetector.create();
+      detector = await face_ml.FaceDetector.create(
+        // Do not discard small faces in group photos. The package default
+        // (0.0) keeps the full detector recall; match thresholds below handle
+        // similarity confidence separately.
+        model: face_ml.FaceDetectionModel.backCamera,
+      );
       final clusters = <_PersonCluster>[];
 
       for (var index = 0; index < images.length; index++) {
@@ -171,8 +232,10 @@ class _FaceAlbumsPageState extends State<FaceAlbumsPage> {
           final bytes = await file.readAsBytes();
           final faces = await detector.detectFacesFromBytes(
             bytes,
-            mode: face_ml.FaceDetectionMode.standard,
+            // Full mode provides the eye alignment expected by the embedding model.
+            mode: face_ml.FaceDetectionMode.full,
           );
+          _detectedFaces += faces.length;
 
           for (final face in faces.take(5)) {
             try {
@@ -184,10 +247,9 @@ class _FaceAlbumsPageState extends State<FaceAlbumsPage> {
               var secondScore = -1.0;
               for (var i = 0; i < clusters.length; i++) {
                 final cluster = clusters[i];
-                var score = -1.0;
-                for (final sample in cluster.samples) {
-                  score = math.max(score, _cosine(sample, embedding)).toDouble();
-                }
+                // Never use two faces from one photograph to reinforce a cluster.
+                if (cluster.paths.contains(file.path)) continue;
+                final score = _clusterSimilarity(cluster, embedding);
                 if (score > bestScore) {
                   secondScore = bestScore;
                   bestScore = score;
@@ -201,7 +263,7 @@ class _FaceAlbumsPageState extends State<FaceAlbumsPage> {
                   bestScore >= _matchThreshold &&
                   (secondScore < 0 || bestScore - secondScore >= _minimumMatchMargin)) {
                 final cluster = clusters[bestIndex];
-                if (cluster.samples.length < 6) {
+                if (cluster.samples.length < 8) {
                   cluster.samples.add(List<double>.from(embedding));
                 }
                 if (!cluster.paths.contains(file.path)) {
@@ -233,13 +295,17 @@ class _FaceAlbumsPageState extends State<FaceAlbumsPage> {
         }
       }
 
-      clusters.removeWhere((group) => group.paths.isEmpty);
+      // A one-photo cluster is not a useful album. Keep only possible
+      // repeat appearances and explain when no group passed the match threshold.
+      clusters.removeWhere((group) => group.paths.length < 2);
       clusters.sort((a, b) => b.paths.length.compareTo(a.paths.length));
       if (mounted) {
         setState(() {
           _groups = clusters;
           _progress = 1;
-          _status = 'Finished: ${clusters.length} possible people groups from ${_processed} photos. Review groups before relying on matches.';
+          _status = clusters.isEmpty
+              ? 'Detected $_detectedFaces face(s) across $_processed photos, but no repeated-face groups passed the similarity threshold. Try at least two clear photos of the same person.'
+              : 'Finished: ${clusters.length} possible people groups from ${_processed} photos. Review groups before relying on matches.';
         });
       }
     } catch (error) {
@@ -254,11 +320,11 @@ class _FaceAlbumsPageState extends State<FaceAlbumsPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Remove from this album?'),
-        content: const Text('This only removes the photo from this temporary face group. The original photo will stay on your phone and will not be deleted.'),
+        title: Text(AppLanguage.text('Remove from this album?')),
+        content: Text(AppLanguage.text('This only removes the photo from this temporary face group. The original photo will stay on your phone and will not be deleted.')),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Remove')),
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: Text(AppLanguage.text('Cancel'))),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: Text(AppLanguage.text('Remove'))),
         ],
       ),
     );
@@ -281,6 +347,43 @@ class _FaceAlbumsPageState extends State<FaceAlbumsPage> {
     if (!_groups.contains(item.group)) _groups.add(item.group);
     _groups.sort((a, b) => b.paths.length.compareTo(a.paths.length));
     setState(() {});
+  }
+
+  Future<void> _viewPhoto(String path) async {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => Dialog.fullscreen(
+        backgroundColor: const Color(0xFF050B12),
+        child: Scaffold(
+          backgroundColor: const Color(0xFF050B12),
+          appBar: AppBar(
+            backgroundColor: const Color(0xFF050B12),
+            foregroundColor: Colors.white,
+            title: Text(path.split(Platform.pathSeparator).last,
+              maxLines: 1, overflow: TextOverflow.ellipsis),
+            actions: [
+              IconButton(
+                tooltip: AppLanguage.text('Close image'),
+                onPressed: () => Navigator.pop(dialogContext),
+                icon: const Icon(Icons.close),
+              ),
+            ],
+          ),
+          body: Center(
+            child: InteractiveViewer(
+              minScale: .8,
+              maxScale: 6,
+              child: Image.file(
+                File(path),
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => const Icon(
+                  Icons.broken_image_outlined, color: Colors.white70, size: 56),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   void _showGroup(_PersonCluster group, int index) {
@@ -325,7 +428,7 @@ class _FaceAlbumsPageState extends State<FaceAlbumsPage> {
                       fit: StackFit.expand,
                       children: [
                         InkWell(
-                          onTap: () => OpenFilex.open(path),
+                          onTap: () => _viewPhoto(path),
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(12),
                             child: Image.file(
@@ -345,7 +448,7 @@ class _FaceAlbumsPageState extends State<FaceAlbumsPage> {
                             color: Colors.black.withValues(alpha: .65),
                             shape: const CircleBorder(),
                             child: IconButton(
-                              tooltip: 'Remove from this album',
+                              tooltip: AppLanguage.text('Remove from this album'),
                               visualDensity: VisualDensity.compact,
                               constraints: const BoxConstraints.tightFor(width: 34, height: 34),
                               padding: EdgeInsets.zero,
@@ -372,39 +475,46 @@ class _FaceAlbumsPageState extends State<FaceAlbumsPage> {
     return Scaffold(
       backgroundColor: const Color(0xFF071E2A),
       appBar: AppBar(
-        title: const Text('Face Similarity Albums'),
+        title: Text(AppLanguage.text('Face Albums')),
         backgroundColor: Colors.transparent,
+        actions: [
+          IconButton(
+            tooltip: AppLanguage.text('Language'),
+            onPressed: _changeLanguage,
+            icon: const Icon(Icons.translate_rounded),
+          ),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const Text(
-            'Private on-device people albums',
+          Text(
+            AppLanguage.text('On-device Face Albums'),
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 6),
-          const Text(
-            'The app compares face features locally. It does not name people, upload photos, or save face templates. Similarity groups are temporary and disappear when you leave this screen.',
+          Text(
+            AppLanguage.text('The app detects faces and compares temporary similarity features on this phone. It does not name people or upload photos. Suggested groups can be wrong, so review them manually. Temporary face features are discarded when you leave this screen.'),
             style: TextStyle(color: Colors.white70, fontSize: 12),
           ),
           const SizedBox(height: 14),
           FilledButton.icon(
             onPressed: _busy ? null : _startScan,
             icon: const Icon(Icons.face_retouching_natural),
-            label: Text(_busy ? 'Scanning photos…' : 'Scan accessible photos'),
+            label: Text(_busy ? (AppLanguage.isSinhala ? 'ඡායාරූප පරීක්ෂා කරමින්…' : 'Scanning photos…') : (AppLanguage.isSinhala ? 'ප්‍රවේශ විය හැකි ඡායාරූප පරීක්ෂා කරන්න' : 'Scan accessible photos')),
           ),
           if (_busy) ...[
             const SizedBox(height: 12),
             LinearProgressIndicator(value: _progress == 0 ? null : _progress, color: widget.accent),
             const SizedBox(height: 6),
-            Text('${(_progress * 100).round()}% • $_processed scanned • $_skipped skipped',
+            Text(AppLanguage.isSinhala ? '${(_progress * 100).round()}% • $_processed පරීක්ෂා කළා • $_skipped මඟහැරුණා' : '${(_progress * 100).round()}% • $_processed scanned • $_detectedFaces faces • $_skipped skipped',
               style: const TextStyle(color: Colors.white60, fontSize: 11)),
           ],
           const SizedBox(height: 12),
-          Text(_status, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+          Text(_displayStatus, style: const TextStyle(color: Colors.white70, fontSize: 12)),
           if (!_busy && _groups.isNotEmpty) ...[
             const SizedBox(height: 12),
-            Text('Possible people • ${_groups.length}',
+            Text(AppLanguage.text('Possible people') + ' • ${_groups.length}',
               style: const TextStyle(fontWeight: FontWeight.w800)),
             const SizedBox(height: 8),
             ..._groups.asMap().entries.map((entry) {
@@ -426,8 +536,8 @@ class _FaceAlbumsPageState extends State<FaceAlbumsPage> {
                       ),
                     ),
                   ),
-                  title: Text('Person group ${index + 1}'),
-                  subtitle: Text('${group.paths.length} photo(s) • Tap to review'),
+                  title: Text(AppLanguage.text('Person group') + ' ${index + 1}'),
+                  subtitle: Text('${group.paths.length} ${AppLanguage.isSinhala ? 'ඡායාරූප' : 'photo(s)'} • ${AppLanguage.isSinhala ? 'බලන්න තට්ටු කරන්න' : 'Tap to review'}'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => _showGroup(group, index),
                 ),
@@ -438,21 +548,21 @@ class _FaceAlbumsPageState extends State<FaceAlbumsPage> {
             TextButton.icon(
               onPressed: _busy ? null : _undoLastRemoval,
               icon: const Icon(Icons.undo),
-              label: Text('Undo last removal (${_undoRemovals.length})'),
+              label: Text(AppLanguage.text('Undo last removal') + ' (${_undoRemovals.length})'),
             ),
           if (_groups.isNotEmpty)
             TextButton.icon(
               onPressed: _busy ? null : () => setState(() {
                 _groups = <_PersonCluster>[];
                 _undoRemovals.clear();
-                _status = 'Temporary face groups cleared from memory.';
+                _status = AppLanguage.isSinhala ? 'තාවකාලික මුහුණු කණ්ඩායම් මතකයෙන් ඉවත් කරන ලදී.' : 'Temporary face groups cleared from memory.';
               }),
               icon: const Icon(Icons.delete_outline),
-              label: const Text('Clear temporary groups'),
+              label: Text(AppLanguage.text('Clear temporary groups')),
             ),
           const SizedBox(height: 12),
-          const Text(
-            'Accuracy note: lighting, camera angle, age changes, masks and low-resolution images can cause missed or incorrect matches. This is a photo-organising aid, not proof of someone’s identity.',
+          Text(
+            AppLanguage.text('Accuracy note: lighting, camera angle, age changes, masks and low-resolution images can cause missed or incorrect matches. This is a photo-organising aid, not proof of someone’s identity.'),
             style: TextStyle(color: Colors.white54, fontSize: 11),
           ),
         ],
