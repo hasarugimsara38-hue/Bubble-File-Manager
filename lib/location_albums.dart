@@ -8,10 +8,49 @@ import 'package:latlong2/latlong.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'app_language.dart';
 
+/// Converts the EXIF GPS rational triplet (degrees, minutes, seconds) to
+/// decimal degrees. Reading Ratio values avoids parsing strings such as 5/1,
+/// 58/1, 1234/100 as six unrelated numbers.
+double? parseGpsCoordinate(IfdTag? tag, String reference) {
+  if (tag == null) return null;
+  final rawValues = tag.values.toList();
+  if (rawValues.length < 3) return null;
+
+  final numbers = <double>[];
+  for (final value in rawValues.take(3)) {
+    if (value is Ratio) {
+      numbers.add(value.toDouble());
+    } else if (value is num) {
+      numbers.add(value.toDouble());
+    } else {
+      return null;
+    }
+  }
+
+  final degrees = numbers[0].abs();
+  final minutes = numbers[1];
+  final seconds = numbers[2];
+  if (minutes < 0 || minutes >= 60 || seconds < 0 || seconds >= 60) {
+    return null;
+  }
+  var coordinate = degrees + minutes / 60 + seconds / 3600;
+  if (reference.trim().toUpperCase().contains('S') ||
+      reference.trim().toUpperCase().contains('W')) {
+    coordinate = -coordinate;
+  }
+  return coordinate;
+}
+
 class LocationAlbumsPage extends StatefulWidget {
-  const LocationAlbumsPage({super.key, required this.targetDirectory, required this.accent});
+  const LocationAlbumsPage({
+    super.key,
+    required this.targetDirectory,
+    required this.accent,
+    required this.onLanguageChanged,
+  });
   final Directory targetDirectory;
   final Color accent;
+  final Future<void> Function(String language) onLanguageChanged;
 
   @override
   State<LocationAlbumsPage> createState() => _LocationAlbumsPageState();
@@ -45,6 +84,13 @@ class _LocationAlbumsPageState extends State<LocationAlbumsPage> {
     }
     if (_status.startsWith('Location scan failed')) return 'ස්ථාන පරීක්ෂාව අසාර්ථක විය. නැවත උත්සාහ කරන්න.';
     return _status;
+  }
+
+  Future<void> _changeLanguage() async {
+    final selected = await showAppLanguageDialog(context, accent: widget.accent);
+    if (selected == null) return;
+    await widget.onLanguageChanged(selected);
+    if (mounted) setState(() {});
   }
 
   Map<String, List<_LocatedPhoto>> get _groups {
@@ -138,21 +184,8 @@ class _LocationAlbumsPageState extends State<LocationAlbumsPage> {
     }
   }
 
-  double? _coordinate(String? raw, String reference) {
-    if (raw == null) return null;
-    final values = RegExp(r'-?\d+(?:\.\d+)?').allMatches(raw)
-        .map((match) => double.tryParse(match.group(0)!))
-        .whereType<double>().toList();
-    if (values.isEmpty) return null;
-    final degrees = values[0].abs();
-    final minutes = values.length > 1 ? values[1] : 0.0;
-    final seconds = values.length > 2 ? values[2] : 0.0;
-    var value = degrees + minutes / 60 + seconds / 3600;
-    if (reference.toUpperCase().contains('S') || reference.toUpperCase().contains('W')) {
-      value = -value;
-    }
-    return value;
-  }
+  double? _coordinate(IfdTag? tag, String reference) =>
+      parseGpsCoordinate(tag, reference);
 
   Future<void> _scan() async {
     if (_scanning) return;
@@ -214,7 +247,7 @@ class _LocationAlbumsPageState extends State<LocationAlbumsPage> {
       final pending = <Directory>[...roots];
       final visited = <String>{};
       final found = <_LocatedPhoto>[];
-      const extensions = <String>{'jpg', 'jpeg', 'tif', 'tiff', 'heic', 'heif'};
+      const extensions = <String>{'jpg', 'jpeg', 'png', 'webp', 'tif', 'tiff', 'heic', 'heif'};
       const maxFiles = 5000;
 
       while (pending.isNotEmpty && _checked < maxFiles) {
@@ -254,11 +287,11 @@ class _LocationAlbumsPageState extends State<LocationAlbumsPage> {
                 if (length == 0 || length > 20 * 1024 * 1024) continue;
                 final tags = await readExifFromBytes(await entity.readAsBytes());
                 final lat = _coordinate(
-                  tags['GPS GPSLatitude']?.printable,
+                  tags['GPS GPSLatitude'],
                   tags['GPS GPSLatitudeRef']?.printable ?? 'N',
                 );
                 final lon = _coordinate(
-                  tags['GPS GPSLongitude']?.printable,
+                  tags['GPS GPSLongitude'],
                   tags['GPS GPSLongitudeRef']?.printable ?? 'E',
                 );
                 if (lat == null ||
@@ -346,6 +379,11 @@ class _LocationAlbumsPageState extends State<LocationAlbumsPage> {
       title: Text(AppLanguage.text('Location Albums')),
       backgroundColor: Colors.transparent,
       actions: [
+        IconButton(
+          tooltip: AppLanguage.text('Language'),
+          onPressed: _changeLanguage,
+          icon: const Icon(Icons.translate_rounded),
+        ),
         IconButton(
           tooltip: AppLanguage.text('Scan photos'),
           onPressed: _scanning ? null : _scan,
