@@ -306,7 +306,7 @@ class _LocationAlbumsPageState extends State<LocationAlbumsPage> {
         child: SizedBox(
           height: MediaQuery.of(sheetContext).size.height * .76,
           child: Column(children: [
-            const Padding(
+            Padding(
               padding: EdgeInsets.all(14),
               child: Text(AppLanguage.text('Photo location map'), style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             ),
@@ -328,7 +328,7 @@ class _LocationAlbumsPageState extends State<LocationAlbumsPage> {
                 )).toList()),
               ],
             )),
-            const Padding(
+            Padding(
               padding: EdgeInsets.all(10),
               child: Text(AppLanguage.text('Map tiles © OpenStreetMap contributors. Exact coordinates remain in this app; place-name lookup is optional.'),
                 textAlign: TextAlign.center, style: TextStyle(fontSize: 10, color: Colors.white60)),
@@ -429,7 +429,7 @@ class _LocationAlbumsPageState extends State<LocationAlbumsPage> {
               ),
             );
           }),
-        ] else if (!_scanning) const Padding(
+        ] else if (!_scanning) Padding(
           padding: EdgeInsets.all(22),
           child: Text(AppLanguage.text('No location albums yet. Scan your photos to look for GPS metadata.'),
             textAlign: TextAlign.center, style: TextStyle(color: Colors.white54)),
