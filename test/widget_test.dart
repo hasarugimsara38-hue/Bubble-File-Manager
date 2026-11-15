@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:bubble_file_manager/main.dart';
 import 'package:bubble_file_manager/ai_assistant.dart';
 import 'package:bubble_file_manager/home_companions.dart';
+import 'package:bubble_file_manager/app_language.dart';
 
 void main() {
   testWidgets('Bubble File Manager shows splash and opens the Assistant from Home', (tester) async {
@@ -14,6 +15,12 @@ void main() {
     expect(find.text('Created by H.G.Aluthge'), findsOneWidget);
 
     await tester.pump(const Duration(milliseconds: 3300));
+    await tester.pump();
+    expect(find.text('Choose your language'), findsOneWidget);
+    expect(find.text('සිංහල'), findsOneWidget);
+    expect(find.text('English'), findsOneWidget);
+    await tester.tap(find.text('English'));
+    await tester.pump();
     await tester.pump(const Duration(seconds: 2));
 
     expect(find.text('My Files'), findsOneWidget);
@@ -50,6 +57,7 @@ void main() {
         body: ListView(children: <Widget>[
           HomeCompanionsPanel(
             accent: const Color(0xFF20E4E8),
+            isSinhala: false,
             onAction: (action) => selectedAction = action,
           ),
         ]),
@@ -67,6 +75,28 @@ void main() {
     expect(find.text('Face Albums'), findsOneWidget);
 
     await tester.tap(find.text('Secret Vault'));
+    expect(selectedAction, 'vault');
+  });
+
+  testWidgets('Hasaru and Yunadie speak Sinhala when Sinhala is selected', (tester) async {
+    String? selectedAction;
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(body: ListView(children: <Widget>[
+        HomeCompanionsPanel(
+          accent: const Color(0xFF20E4E8),
+          isSinhala: true,
+          onAction: (action) => selectedAction = action,
+        ),
+      ])),
+    ));
+    await tester.pump(const Duration(seconds: 3));
+    expect(find.text('ගොනු පිරික්සන්න'), findsOneWidget);
+    expect(find.text('ඡායාරූප සහ වීඩියෝ'), findsOneWidget);
+    await tester.tap(find.text('විශේෂාංග'));
+    await tester.pump(const Duration(seconds: 3));
+    expect(find.text('රහස් සුරක්ෂිතාගාරය'), findsOneWidget);
+    expect(find.text('මුහුණු ඇල්බම'), findsOneWidget);
+    await tester.tap(find.text('රහස් සුරක්ෂිතාගාරය'));
     expect(selectedAction, 'vault');
   });
 
