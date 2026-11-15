@@ -4,6 +4,7 @@ import 'dart:math' as math;
 
 import 'package:face_detection_tflite/face_detection_tflite.dart' as face_ml;
 import 'package:flutter/material.dart';
+import 'app_language.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 /// On-device, temporary face-similarity albums.
@@ -257,11 +258,11 @@ class _FaceAlbumsPageState extends State<FaceAlbumsPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Remove from this album?'),
-        content: const Text('This only removes the photo from this temporary face group. The original photo will stay on your phone and will not be deleted.'),
+        title: Text(AppLanguage.text('Remove from this album?')),
+        content: Text(AppLanguage.text('This only removes the photo from this temporary face group. The original photo will stay on your phone and will not be deleted.')),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Remove')),
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: Text(AppLanguage.text('Cancel'))),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: Text(AppLanguage.text('Remove'))),
         ],
       ),
     );
@@ -300,7 +301,7 @@ class _FaceAlbumsPageState extends State<FaceAlbumsPage> {
               maxLines: 1, overflow: TextOverflow.ellipsis),
             actions: [
               IconButton(
-                tooltip: 'Close image',
+                tooltip: AppLanguage.text('Close image'),
                 onPressed: () => Navigator.pop(dialogContext),
                 icon: const Icon(Icons.close),
               ),
@@ -385,7 +386,7 @@ class _FaceAlbumsPageState extends State<FaceAlbumsPage> {
                             color: Colors.black.withValues(alpha: .65),
                             shape: const CircleBorder(),
                             child: IconButton(
-                              tooltip: 'Remove from this album',
+                              tooltip: AppLanguage.text('Remove from this album'),
                               visualDensity: VisualDensity.compact,
                               constraints: const BoxConstraints.tightFor(width: 34, height: 34),
                               padding: EdgeInsets.zero,
@@ -412,7 +413,7 @@ class _FaceAlbumsPageState extends State<FaceAlbumsPage> {
     return Scaffold(
       backgroundColor: const Color(0xFF071E2A),
       appBar: AppBar(
-        title: const Text('Face Albums'),
+        title: Text(AppLanguage.text('Face Albums')),
         backgroundColor: Colors.transparent,
       ),
       body: ListView(
@@ -431,7 +432,7 @@ class _FaceAlbumsPageState extends State<FaceAlbumsPage> {
           FilledButton.icon(
             onPressed: _busy ? null : _startScan,
             icon: const Icon(Icons.face_retouching_natural),
-            label: Text(_busy ? 'Scanning photos…' : 'Scan accessible photos'),
+            label: Text(_busy ? (AppLanguage.isSinhala ? 'ඡායාරූප පරීක්ෂා කරමින්…' : 'Scanning photos…') : (AppLanguage.isSinhala ? 'ප්‍රවේශ විය හැකි ඡායාරූප පරීක්ෂා කරන්න' : 'Scan accessible photos')),
           ),
           if (_busy) ...[
             const SizedBox(height: 12),
@@ -444,7 +445,7 @@ class _FaceAlbumsPageState extends State<FaceAlbumsPage> {
           Text(_status, style: const TextStyle(color: Colors.white70, fontSize: 12)),
           if (!_busy && _groups.isNotEmpty) ...[
             const SizedBox(height: 12),
-            Text('Possible people • ${_groups.length}',
+            Text(AppLanguage.text('Possible people') + ' • ${_groups.length}',
               style: const TextStyle(fontWeight: FontWeight.w800)),
             const SizedBox(height: 8),
             ..._groups.asMap().entries.map((entry) {
@@ -466,8 +467,8 @@ class _FaceAlbumsPageState extends State<FaceAlbumsPage> {
                       ),
                     ),
                   ),
-                  title: Text('Person group ${index + 1}'),
-                  subtitle: Text('${group.paths.length} photo(s) • Tap to review'),
+                  title: Text(AppLanguage.text('Person group') + ' ${index + 1}'),
+                  subtitle: Text('${group.paths.length} ${AppLanguage.isSinhala ? 'ඡායාරූප' : 'photo(s)'} • ${AppLanguage.isSinhala ? 'බලන්න තට්ටු කරන්න' : 'Tap to review'}'),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => _showGroup(group, index),
                 ),
@@ -478,7 +479,7 @@ class _FaceAlbumsPageState extends State<FaceAlbumsPage> {
             TextButton.icon(
               onPressed: _busy ? null : _undoLastRemoval,
               icon: const Icon(Icons.undo),
-              label: Text('Undo last removal (${_undoRemovals.length})'),
+              label: Text(AppLanguage.text('Undo last removal') + ' (${_undoRemovals.length})'),
             ),
           if (_groups.isNotEmpty)
             TextButton.icon(
@@ -488,7 +489,7 @@ class _FaceAlbumsPageState extends State<FaceAlbumsPage> {
                 _status = 'Temporary face groups cleared from memory.';
               }),
               icon: const Icon(Icons.delete_outline),
-              label: const Text('Clear temporary groups'),
+              label: Text(AppLanguage.text('Clear temporary groups')),
             ),
           const SizedBox(height: 12),
           const Text(
