@@ -278,14 +278,54 @@ class _HomeCompanionsPanelState extends State<HomeCompanionsPanel>
             ],
           ),
           SizedBox(
-            height: 126,
+            height: 190,
             width: double.infinity,
-            child: CustomPaint(
-              painter: _AnimeDuoPainter(
-              speaker: _speaker,
-              accent: widget.accent,
-              motion: _characterMotion,
-            ),
+            child: AnimatedBuilder(
+              animation: _characterMotion,
+              builder: (context, child) {
+                final phase = _characterMotion.value * math.pi * 2;
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: <Widget>[
+                    Expanded(
+                      child: Transform.translate(
+                        offset: Offset(0, math.sin(phase) * 2.2),
+                        child: Semantics(
+                          image: true,
+                          label: 'Hasaru anime companion',
+                          child: Image.asset(
+                            'assets/characters/hasaru_1080.png',
+                            height: 188,
+                            fit: BoxFit.contain,
+                            filterQuality: FilterQuality.high,
+                            errorBuilder: (context, error, stackTrace) => const Center(
+                              child: Icon(Icons.person_rounded, color: Colors.white54, size: 64),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: Transform.translate(
+                        offset: Offset(0, math.sin(phase + .85) * 2.2),
+                        child: Semantics(
+                          image: true,
+                          label: 'Yunadie anime companion',
+                          child: Image.asset(
+                            'assets/characters/yunadie_1080.png',
+                            height: 188,
+                            fit: BoxFit.contain,
+                            filterQuality: FilterQuality.high,
+                            errorBuilder: (context, error, stackTrace) => const Center(
+                              child: Icon(Icons.person_rounded, color: Colors.white54, size: 64),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
           ),
           Row(
