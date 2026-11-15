@@ -6,14 +6,10 @@ import 'package:bubble_file_manager/home_companions.dart';
 
 void main() {
   testWidgets('Bubble File Manager shows splash and opens the Assistant from Home', (tester) async {
-    await tester.pumpWidget(const AquaApp());
+    // Use the deterministic language override here. The first-run language
+    // selection itself is verified in a separate widget test below.
+    await tester.pumpWidget(const AquaApp(initialLanguage: 'en'));
 
-    await tester.pump();
-    expect(find.text('Choose your language'), findsOneWidget);
-    expect(find.text('සිංහල'), findsOneWidget);
-    expect(find.text('English'), findsOneWidget);
-
-    await tester.tap(find.text('English'));
     await tester.pump();
     expect(find.text('BUBBLE'), findsOneWidget);
     expect(find.text('FILE MANAGER'), findsOneWidget);
@@ -50,6 +46,24 @@ void main() {
     expect(find.text('Offline guidance'), findsOneWidget);
   });
 
+
+  testWidgets('First-run language selector offers Sinhala and English', (tester) async {
+    String? selectedLanguage;
+    await tester.pumpWidget(MaterialApp(
+      home: LanguageSelectionScreen(
+        onSelected: (language) => selectedLanguage = language,
+      ),
+    ));
+
+    expect(find.text('Choose your language'), findsOneWidget);
+    expect(find.text('සිංහල'), findsOneWidget);
+    expect(find.text('English'), findsOneWidget);
+
+    await tester.tap(find.text('සිංහල'));
+    expect(selectedLanguage, 'si');
+    await tester.tap(find.text('English'));
+    expect(selectedLanguage, 'en');
+  });
 
   testWidgets('Hasaru and Yunadie type messages and offer working feature options', (tester) async {
     String? selectedAction;
