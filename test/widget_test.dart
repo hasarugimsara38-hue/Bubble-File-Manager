@@ -119,9 +119,15 @@ void main() {
       ),
     ));
 
-    await tester.pump(const Duration(seconds: 2));
+    // The first-run welcome now includes four timed, typewritten
+    // introduction/story lines before the navigation choices appear.
+    await tester.pump(const Duration(seconds: 20));
     expect(find.text('Browse files'), findsOneWidget);
     expect(find.text('Photos & videos'), findsOneWidget);
+    expect(
+      find.textContaining('Our first Aqua mission starts now!'),
+      findsOneWidget,
+    );
 
     await tester.tap(find.text('Special features'));
     await tester.pump(const Duration(seconds: 3));
@@ -173,9 +179,13 @@ void main() {
         ),
       ])),
     ));
-    await tester.pump(const Duration(seconds: 3));
+    await tester.pump(const Duration(seconds: 20));
     expect(find.text('ගොනු පිරික්සන්න'), findsOneWidget);
     expect(find.text('ඡායාරූප සහ වීඩියෝ'), findsOneWidget);
+    expect(
+      find.textContaining('අද අපේ පළමු Aqua මෙහෙයුම'),
+      findsOneWidget,
+    );
     await tester.tap(find.text('විශේෂාංග'));
     await tester.pump(const Duration(seconds: 3));
     expect(find.text('රහස් සුරක්ෂිතාගාරය'), findsOneWidget);
