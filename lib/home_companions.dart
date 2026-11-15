@@ -103,7 +103,7 @@ class _HomeCompanionsPanelState extends State<HomeCompanionsPanel> {
       message: widget.isSinhala
           ? 'හායි! මම Hasaru. ඔයාගේ ගොනු පිළිවෙළට තබාගන්න මම උදව් කරන්නම්. අද අපි මොනවා බලමුද?'
           : 'Hi! I am Hasaru. I can help you keep your files organised. What would you like to explore today?',
-      choices: const <_CompanionChoice>[
+      choices: <_CompanionChoice>[
         _CompanionChoice(widget.isSinhala ? 'ගොනු පිරික්සන්න' : 'Browse files', 'files_intro'),
         _CompanionChoice(widget.isSinhala ? 'ඡායාරූප සහ වීඩියෝ' : 'Photos & videos', 'media_intro'),
         _CompanionChoice(widget.isSinhala ? 'විශේෂාංග' : 'Special features', 'features_intro'),
@@ -121,7 +121,7 @@ class _HomeCompanionsPanelState extends State<HomeCompanionsPanel> {
           message: widget.isSinhala
               ? 'නියමයි! ෆෝල්ඩර්, ලේඛන සහ බාගත කළ ගොනු එකම තැනකින් බලන්න පුළුවන්. දැන් ගොනු විවෘත කරමුද?'
               : 'Great! You can browse folders, documents and downloads in one place. Shall we open Files?',
-          choices: const <_CompanionChoice>[
+          choices: <_CompanionChoice>[
             _CompanionChoice(widget.isSinhala ? 'ගොනු විවෘත කරන්න' : 'Open Files', 'files'),
             _CompanionChoice(widget.isSinhala ? 'ආපසු' : 'Back', 'back'),
           ],
@@ -133,7 +133,7 @@ class _HomeCompanionsPanelState extends State<HomeCompanionsPanel> {
           message: widget.isSinhala
               ? 'හායි! මම Yunadie. ඡායාරූප, වීඩියෝ සහ ශ්‍රව්‍ය ගොනු වර්ග අනුව පහසුවෙන් බලන්න පුළුවන්. මොනවාද බලන්න කැමති?'
               : 'Hi! I am Yunadie. You can browse photos, videos and audio files by category. What would you like to see?',
-          choices: const <_CompanionChoice>[
+          choices: <_CompanionChoice>[
             _CompanionChoice(widget.isSinhala ? 'රූප' : 'Images', 'images'),
             _CompanionChoice(widget.isSinhala ? 'වීඩියෝ' : 'Videos', 'videos'),
             _CompanionChoice(widget.isSinhala ? 'ශ්‍රව්‍ය' : 'Audio', 'audio'),
@@ -147,7 +147,7 @@ class _HomeCompanionsPanelState extends State<HomeCompanionsPanel> {
           message: widget.isSinhala
               ? 'අපේ විශේෂාංග බලමු! රහස් සුරක්ෂිතාගාරයෙන් ගොනු ආරක්ෂා කරන්නත්, මුහුණු සහ ස්ථාන ඇල්බමවලින් ඡායාරූප පිළිවෙළට සකස් කරන්නත් පුළුවන්.'
               : 'Let us explore the special features! The Secret Vault protects files, while Face and Location Albums help organise your photos.',
-          choices: const <_CompanionChoice>[
+          choices: <_CompanionChoice>[
             _CompanionChoice(widget.isSinhala ? 'රහස් සුරක්ෂිතාගාරය' : 'Secret Vault', 'vault'),
             _CompanionChoice(widget.isSinhala ? 'මුහුණු ඇල්බම' : 'Face Albums', 'faces'),
             _CompanionChoice(widget.isSinhala ? 'ස්ථාන ඇල්බම' : 'Location Albums', 'locations'),
@@ -215,7 +215,7 @@ class _HomeCompanionsPanelState extends State<HomeCompanionsPanel> {
           dense: true,
           contentPadding: const EdgeInsets.symmetric(horizontal: 13, vertical: 2),
           leading: Icon(Icons.chat_bubble_rounded, color: widget.accent),
-          title: const Text(
+          title: Text(
             widget.isSinhala ? 'Hasaru සහ Yunadie සමඟ කතා කරන්න' : 'Talk with Hasaru & Yunadie',
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13),
           ),
@@ -251,7 +251,7 @@ class _HomeCompanionsPanelState extends State<HomeCompanionsPanel> {
             children: <Widget>[
               Icon(Icons.auto_awesome_rounded, color: widget.accent, size: 18),
               const SizedBox(width: 7),
-              const Expanded(
+              Expanded(
                 child: Text(
                   widget.isSinhala ? 'HASARU සහ YUNADIE' : 'HASARU & YUNADIE',
                   style: TextStyle(color: Colors.white, fontSize: 12, letterSpacing: 1.1, fontWeight: FontWeight.w800),
