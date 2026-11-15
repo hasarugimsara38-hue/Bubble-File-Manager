@@ -2311,7 +2311,7 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
               PopupMenuButton<String>(
                 tooltip: AppLanguage.text('File display method'),
                 onSelected: (value) => setState(() => _viewMode = value),
-                itemBuilder: (context) => const [
+                itemBuilder: (context) => [
                   PopupMenuItem(value: 'List', child: Text(AppLanguage.text('List view'))),
                   PopupMenuItem(value: 'Compact', child: Text(AppLanguage.text('Compact view'))),
                   PopupMenuItem(value: 'Grid', child: Text(AppLanguage.text('Grid view'))),
