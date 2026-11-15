@@ -419,13 +419,13 @@ class _FaceAlbumsPageState extends State<FaceAlbumsPage> {
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
-          const Text(
-            'On-device Face Albums',
+          Text(
+            AppLanguage.text('On-device Face Albums'),
             style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 6),
-          const Text(
-            'The app detects faces and compares temporary similarity features on this phone. It does not name people or upload photos. Suggested groups can be wrong, so review them manually. Temporary face features are discarded when you leave this screen.',
+          Text(
+            AppLanguage.text('The app detects faces and compares temporary similarity features on this phone. It does not name people or upload photos. Suggested groups can be wrong, so review them manually. Temporary face features are discarded when you leave this screen.'),
             style: TextStyle(color: Colors.white70, fontSize: 12),
           ),
           const SizedBox(height: 14),
@@ -438,11 +438,11 @@ class _FaceAlbumsPageState extends State<FaceAlbumsPage> {
             const SizedBox(height: 12),
             LinearProgressIndicator(value: _progress == 0 ? null : _progress, color: widget.accent),
             const SizedBox(height: 6),
-            Text('${(_progress * 100).round()}% • $_processed scanned • $_skipped skipped',
+            Text(AppLanguage.isSinhala ? '${(_progress * 100).round()}% • $_processed පරීක්ෂා කළා • $_skipped මඟහැරුණා' : '${(_progress * 100).round()}% • $_processed scanned • $_skipped skipped',
               style: const TextStyle(color: Colors.white60, fontSize: 11)),
           ],
           const SizedBox(height: 12),
-          Text(_status, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+          Text(AppLanguage.text(_status), style: const TextStyle(color: Colors.white70, fontSize: 12)),
           if (!_busy && _groups.isNotEmpty) ...[
             const SizedBox(height: 12),
             Text(AppLanguage.text('Possible people') + ' • ${_groups.length}',
@@ -486,14 +486,14 @@ class _FaceAlbumsPageState extends State<FaceAlbumsPage> {
               onPressed: _busy ? null : () => setState(() {
                 _groups = <_PersonCluster>[];
                 _undoRemovals.clear();
-                _status = 'Temporary face groups cleared from memory.';
+                _status = AppLanguage.isSinhala ? 'තාවකාලික මුහුණු කණ්ඩායම් මතකයෙන් ඉවත් කරන ලදී.' : 'Temporary face groups cleared from memory.';
               }),
               icon: const Icon(Icons.delete_outline),
               label: Text(AppLanguage.text('Clear temporary groups')),
             ),
           const SizedBox(height: 12),
-          const Text(
-            'Accuracy note: lighting, camera angle, age changes, masks and low-resolution images can cause missed or incorrect matches. This is a photo-organising aid, not proof of someone’s identity.',
+          Text(
+            AppLanguage.text('Accuracy note: lighting, camera angle, age changes, masks and low-resolution images can cause missed or incorrect matches. This is a photo-organising aid, not proof of someone’s identity.'),
             style: TextStyle(color: Colors.white54, fontSize: 11),
           ),
         ],
