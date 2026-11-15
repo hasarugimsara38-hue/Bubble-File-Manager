@@ -27,8 +27,10 @@ class _CompanionChoice {
   final String action;
 }
 
-class _HomeCompanionsPanelState extends State<HomeCompanionsPanel> {
+class _HomeCompanionsPanelState extends State<HomeCompanionsPanel>
+    with SingleTickerProviderStateMixin {
   Timer? _typingTimer;
+  late final AnimationController _characterMotion;
   String _speaker = 'Hasaru';
   String _fullText = '';
   String _visibleText = '';
@@ -41,12 +43,17 @@ class _HomeCompanionsPanelState extends State<HomeCompanionsPanel> {
   @override
   void initState() {
     super.initState();
+    _characterMotion = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 4200),
+    )..repeat();
     _showWelcome(initial: true);
   }
 
   @override
   void dispose() {
     _typingTimer?.cancel();
+    _characterMotion.dispose();
     super.dispose();
   }
 
@@ -274,7 +281,11 @@ class _HomeCompanionsPanelState extends State<HomeCompanionsPanel> {
             height: 126,
             width: double.infinity,
             child: CustomPaint(
-              painter: _AnimeDuoPainter(speaker: _speaker, accent: widget.accent),
+              painter: _AnimeDuoPainter(
+              speaker: _speaker,
+              accent: widget.accent,
+              motion: _characterMotion,
+            ),
             ),
           ),
           Row(
@@ -348,29 +359,94 @@ class _HomeCompanionsPanelState extends State<HomeCompanionsPanel> {
 }
 
 class _AnimeDuoPainter extends CustomPainter {
-  _AnimeDuoPainter({required this.speaker, required this.accent});
+  _AnimeDuoPainter({
+    required this.speaker,
+    required this.accent,
+    required Animation<double> motion,
+  }) : _motion = motion, super(repaint: motion);
 
   final String speaker;
   final Color accent;
+  final Animation<double> _motion;
 
   @override
   void paint(Canvas canvas, Size size) {
     if (size.isEmpty) return;
     final scale = math.min(size.width / 300, size.height / 135);
+    final phase = _motion.value * math.pi * 2;
     canvas.save();
     canvas.translate((size.width - 300 * scale) / 2, (size.height - 135 * scale) / 2);
     canvas.scale(scale);
-    _drawCharacter(canvas, const Offset(82, 41), girl: false, talking: speaker == 'Hasaru');
-    _drawCharacter(canvas, const Offset(220, 41), girl: true, talking: speaker == 'Yunadie');
+
+    // Soft animated sparkles make the companion panel feel alive without
+    // adding another heavy particle widget tree.
+    for (var i = 0; i < 8; i++) {
+      final angle = phase * .34 + i * math.pi / 4;
+      final radius = 53.0 + (i % 3) * 7.0;
+      final center = Offset(
+        150 + math.cos(angle) * radius,
+        69 + math.sin(angle * 1.2) * 35,
+      );
+      final pulse = .45 + .55 * math.sin(phase * 1.8 + i).abs();
+      canvas.drawCircle(
+        center,
+        1.0 + pulse * 1.15,
+        Paint()..color = accent.withOpacity(.18 + pulse * .42),
+      );
+    }
+
+    _drawCharacter(
+      canvas,
+      const Offset(82, 41),
+      girl: false,
+      talking: speaker == 'Hasaru',
+      phase: phase,
+    );
+    _drawCharacter(
+      canvas,
+      const Offset(220, 41),
+      girl: true,
+      talking: speaker == 'Yunadie',
+      phase: phase + .9,
+    );
     canvas.restore();
   }
 
-  void _drawCharacter(Canvas canvas, Offset c, {required bool girl, required bool talking}) {
+  void _drawCharacter(
+    Canvas canvas,
+    Offset c, {
+    required bool girl,
+    required bool talking,
+    required double phase,
+  }) {
+    final motionOffset = girl ? .8 : 0.0;
+    final bob = math.sin(phase + motionOffset) * 2.1;
+    final sway = math.sin(phase * .55 + motionOffset) * .022;
+    canvas.save();
+    canvas.translate(c.dx, c.dy + bob);
+    canvas.rotate(sway);
+    canvas.translate(-c.dx, -c.dy);
     final skin = const Color(0xFFFFDCCB);
     final hair = girl ? const Color(0xFF241338) : const Color(0xFF111827);
     final eye = girl ? const Color(0xFF9A5BFF) : const Color(0xFF238CFF);
     final outfit = girl ? const Color(0xFFEAF5FF) : const Color(0xFF082B59);
     final trim = girl ? const Color(0xFF5D8FEA) : const Color(0xFF19BDEB);
+    final hairPaint = Paint()
+      ..shader = LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: <Color>[
+          Color.lerp(hair, Colors.white, .20)!,
+          hair,
+          Color.lerp(hair, Colors.black, .28)!,
+        ],
+      ).createShader(Rect.fromLTWH(c.dx - 48, 6, 96, 128));
+    final skinPaint = Paint()
+      ..shader = const LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: <Color>[Color(0xFFFFF0E6), Color(0xFFFFDCCB), Color(0xFFF2BDAE)],
+      ).createShader(Rect.fromCenter(center: Offset(c.dx, 45), width: 48, height: 60));
 
     final halo = Paint()
       ..shader = RadialGradient(
@@ -405,7 +481,7 @@ class _AnimeDuoPainter extends CustomPainter {
         ..quadraticBezierTo(c.dx + 51, 105, c.dx + 39, 51)
         ..quadraticBezierTo(c.dx + 28, 13, c.dx - 28, 32)
         ..close();
-      canvas.drawPath(longHair, Paint()..color = hair);
+      canvas.drawPath(longHair, hairPaint);
     } else {
       final backHair = Path()
         ..moveTo(c.dx - 30, 42)
@@ -414,7 +490,7 @@ class _AnimeDuoPainter extends CustomPainter {
         ..quadraticBezierTo(c.dx + 48, 35, c.dx + 33, 67)
         ..lineTo(c.dx - 28, 68)
         ..close();
-      canvas.drawPath(backHair, Paint()..color = hair);
+      canvas.drawPath(backHair, hairPaint);
     }
 
     canvas.drawRRect(
@@ -423,7 +499,7 @@ class _AnimeDuoPainter extends CustomPainter {
     );
     canvas.drawOval(Rect.fromCenter(center: Offset(c.dx - 25, 46), width: 13, height: 17), Paint()..color = skin);
     canvas.drawOval(Rect.fromCenter(center: Offset(c.dx + 25, 46), width: 13, height: 17), Paint()..color = skin);
-    canvas.drawOval(Rect.fromCenter(center: Offset(c.dx, 45), width: 47, height: 59), Paint()..color = skin);
+    canvas.drawOval(Rect.fromCenter(center: Offset(c.dx, 45), width: 47, height: 59), skinPaint);
 
     final faceShade = Paint()
       ..shader = const LinearGradient(
@@ -440,7 +516,10 @@ class _AnimeDuoPainter extends CustomPainter {
       );
       canvas.drawOval(
         Rect.fromCenter(center: Offset(c.dx + side * 12, 48), width: 7, height: 11),
-        Paint()..color = eye,
+        Paint()
+          ..shader = RadialGradient(
+            colors: <Color>[Color.lerp(eye, Colors.white, .25)!, eye, const Color(0xFF171B36)],
+          ).createShader(Rect.fromCenter(center: Offset(c.dx + side * 12, 48), width: 8, height: 12)),
       );
       canvas.drawCircle(Offset(c.dx + side * 12, 49), 3.2, Paint()..color = const Color(0xFF171B36));
       canvas.drawCircle(Offset(c.dx + side * 12 - 1.8, 45.5), 2, Paint()..color = Colors.white);
@@ -453,8 +532,32 @@ class _AnimeDuoPainter extends CustomPainter {
     }
 
     final mouth = Paint()..color = const Color(0xFF9E4655);
+    final blinkPhase = (_motion.value + (girl ? .18 : .02)) % 1.0;
+    if (blinkPhase < .035) {
+      // Brief eyelid overlay; staggered so the two characters do not blink together.
+      canvas.drawOval(
+        Rect.fromCenter(center: Offset(c.dx - 12, 47), width: 13, height: 16),
+        skinPaint,
+      );
+      canvas.drawOval(
+        Rect.fromCenter(center: Offset(c.dx + 12, 47), width: 13, height: 16),
+        skinPaint,
+      );
+      final lid = Paint()
+        ..color = hair
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.5
+        ..strokeCap = StrokeCap.round;
+      canvas.drawLine(Offset(c.dx - 18, 47), Offset(c.dx - 6, 47), lid);
+      canvas.drawLine(Offset(c.dx + 6, 47), Offset(c.dx + 18, 47), lid);
+    }
+
     if (talking) {
-      canvas.drawOval(Rect.fromCenter(center: Offset(c.dx, 67), width: 8, height: 9), mouth);
+      final mouthHeight = 3.0 + math.sin(phase * 7).abs() * 6.0;
+      canvas.drawOval(
+        Rect.fromCenter(center: Offset(c.dx, 67), width: 8, height: mouthHeight),
+        mouth,
+      );
       canvas.drawOval(Rect.fromCenter(center: Offset(c.dx, 65), width: 5, height: 2), Paint()..color = Colors.white);
     } else {
       final smile = Path()
@@ -478,11 +581,27 @@ class _AnimeDuoPainter extends CustomPainter {
       ..lineTo(c.dx - 9, 45)
       ..lineTo(c.dx - 18, 34)
       ..close();
-    canvas.drawPath(fringe, Paint()..color = hair);
+    canvas.drawPath(fringe, hairPaint);
     canvas.drawPath(fringe, Paint()
       ..color = trim.withOpacity(.65)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.0);
+    // Fine hair glints and a clean outfit accent lift the hand-drawn finish.
+    canvas.drawPath(
+      Path()
+        ..moveTo(c.dx - 23, 24)
+        ..quadraticBezierTo(c.dx - 12, 11, c.dx + 1, 16),
+      Paint()
+        ..color = Colors.white.withOpacity(.42)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.6
+        ..strokeCap = StrokeCap.round,
+    );
+    canvas.drawLine(
+      Offset(c.dx - 20, 112),
+      Offset(c.dx + 20, 112),
+      Paint()..color = Colors.white.withOpacity(.34)..strokeWidth = 1.0,
+    );
 
     if (girl) {
       canvas.drawCircle(Offset(c.dx + 32, 19), 7, Paint()..color = const Color(0xFF56B9FF));
@@ -508,6 +627,7 @@ class _AnimeDuoPainter extends CustomPainter {
         ..close();
       canvas.drawPath(bow, Paint()..color = const Color(0xFF398BE8));
       canvas.drawCircle(Offset(c.dx, 94), 4, Paint()..color = const Color(0xFFB7E8FF));
+      canvas.drawCircle(Offset(c.dx, 116), 2.5, Paint()..color = const Color(0xFFFFD98B));
     } else {
       final hood = Path()
         ..moveTo(c.dx - 23, 86)
@@ -522,7 +642,42 @@ class _AnimeDuoPainter extends CustomPainter {
         ..strokeWidth = 1.8);
       canvas.drawCircle(Offset(c.dx - 31, 88), 2.3, Paint()..color = trim);
       canvas.drawCircle(Offset(c.dx + 31, 88), 2.3, Paint()..color = trim);
+      canvas.drawPath(
+        Path()
+          ..moveTo(c.dx - 13, 119)
+          ..quadraticBezierTo(c.dx, 126, c.dx + 13, 119),
+        Paint()
+          ..color = trim.withOpacity(.75)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.5
+          ..strokeCap = StrokeCap.round,
+      );
     }
+
+    // A small wave gesture is animated for the character who is speaking.
+    if (talking) {
+      final side = girl ? 1.0 : -1.0;
+      final lift = math.sin(phase * 2.2) * 5.0;
+      final hand = Offset(c.dx + side * 47, 74 + lift);
+      final armPaint = Paint()
+        ..color = trim
+        ..strokeWidth = 5
+        ..strokeCap = StrokeCap.round
+        ..style = PaintingStyle.stroke;
+      canvas.drawPath(
+        Path()
+          ..moveTo(c.dx + side * 29, 103)
+          ..quadraticBezierTo(c.dx + side * 42, 95 + lift, hand.dx, hand.dy),
+        armPaint,
+      );
+      canvas.drawCircle(hand, 5.2, Paint()..color = skin);
+      canvas.drawCircle(
+        Offset(hand.dx + side * 1.5, hand.dy - 1.6),
+        1.2,
+        Paint()..color = Colors.white.withOpacity(.68),
+      );
+    }
+    canvas.restore();
   }
 
   @override
