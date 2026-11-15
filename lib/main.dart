@@ -1424,8 +1424,55 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
     return (bytes / (1024 * 1024 * 1024)).toStringAsFixed(2) + ' GB';
   }
 
+  String _localizedMessage(String value) {
+    if (!AppLanguage.isSinhala) return value;
+    const prefixes = <String, String>{
+      'Recycle Bin could not be initialized: ': 'ප්‍රතිචක්‍රීකරණ බඳුන සකස් කළ නොහැකි විය: ',
+      'Copy or move failed: ': 'පිටපත් කිරීම හෝ ගෙනයාම අසාර්ථකයි: ',
+      'Could not safely move item to Recycle Bin: ': 'අයිතමය ආරක්ෂිතව ප්‍රතිචක්‍රීකරණ බඳුනට ගෙනයාම අසාර්ථකයි: ',
+      'A recovery copy was saved in Recycle Bin, but the original could not be fully removed: ': 'ප්‍රතිසාධන පිටපතක් සුරැකි නමුත් මුල් ගොනුව සම්පූර්ණයෙන් ඉවත් කළ නොහැකි විය: ',
+      'Restore failed: ': 'නැවත ලබාගැනීම අසාර්ථකයි: ',
+      'Could not save the recovery timer; item remains in Recycle Bin: ': 'ප්‍රතිසාධන කාලය සුරැකිය නොහැකි විය; අයිතමය බඳුනේම පවතී: ',
+      'Search stopped: ': 'සෙවීම නතර විය: ',
+      'Duplicate scan failed: ': 'අනුපිටපත් පරීක්ෂාව අසාර්ථකයි: ',
+      'Could not create folder: ': 'ෆෝල්ඩරය සෑදිය නොහැකි විය: ',
+      'Rename failed: ': 'නම වෙනස් කිරීම අසාර්ථකයි: ',
+      'Could not share this file: ': 'මෙම ගොනුව බෙදාගත නොහැකි විය: ',
+      'Could not open file: ': 'ගොනුව විවෘත කළ නොහැකි විය: ',
+      'Cannot read this media file: ': 'මාධ්‍ය ගොනුව කියවිය නොහැකි විය: ',
+      'Could not open this ': 'මෙය විවෘත කළ නොහැකි විය: ',
+      'Built-in ': 'යෙදුමේම ',
+    };
+    for (final entry in prefixes.entries) {
+      if (value.startsWith(entry.key)) {
+        return entry.value + value.substring(entry.key.length);
+      }
+    }
+    const messages = <String, String>{
+      'This item is already in the current folder.': 'මෙම අයිතමය දැනටමත් මෙම ෆෝල්ඩරයේ ඇත.',
+      'Recycle Bin is not ready yet.': 'ප්‍රතිචක්‍රීකරණ බඳුන තවම සූදානම් නැත.',
+      'Moved to Recycle Bin for 30 days.': 'අයිතමය දින 30ක් සඳහා ප්‍රතිචක්‍රීකරණ බඳුනට ගෙන ගියා.',
+      'File restored.': 'ගොනුව නැවත ලබාගත්තා.',
+      'This item is already in its 2-hour recovery period.': 'මෙම අයිතමය දැනටමත් පැය 2ක ප්‍රතිසාධන කාලයේ ඇත.',
+      'Moved to 2-hour temporary recovery stage.': 'පැය 2ක තාවකාලික ප්‍රතිසාධන අදියරට ගෙන ගියා.',
+      'Scanning storage for identical files…': 'එකම ගොනු සොයමින් ගබඩාව පරීක්ෂා කරයි…',
+      'Sharing folders is not supported yet. Select an individual file.': 'ෆෝල්ඩර් බෙදාගැනීම තවම සහාය නොදක්වයි. තනි ගොනුවක් තෝරන්න.',
+      'Incorrect folder PIN.': 'ෆෝල්ඩර මුරපදය වැරදියි.',
+      'Folder PIN removed.': 'ෆෝල්ඩර මුරපදය ඉවත් කළා.',
+      'PINs must match and contain at least 6 characters.': 'මුරපද දෙක ගැළපිය යුතු අතර අවම වශයෙන් අක්ෂර 6ක් තිබිය යුතුය.',
+      'In-app PIN gate enabled. This does not encrypt the folder or block access from other apps.': 'යෙදුම තුළ ෆෝල්ඩර අගුල සක්‍රිය කළා. මෙය ෆෝල්ඩරය සංකේතනය නොකරන අතර වෙනත් යෙදුම්වල ප්‍රවේශය වළක්වන්නේ නැත.',
+      'This media file is no longer available. Refresh the folder and try again.': 'මෙම මාධ්‍ය ගොනුව තවදුරටත් ලබාගත නොහැක. ෆෝල්ඩරය යාවත්කාලීන කර නැවත උත්සාහ කරන්න.',
+      'This media file is empty and cannot be played.': 'මෙම මාධ්‍ය ගොනුව හිස් බැවින් වාදනය කළ නොහැක.',
+      'Built-in audio player could not play this format. Trying an installed media player…': 'යෙදුමේම ශ්‍රව්‍ය වාදකයට මෙම ආකෘතිය වාදනය කළ නොහැක. ස්ථාපිත වෙනත් වාදකයක් උත්සාහ කරයි…',
+      'Built-in video player could not play this format. Trying an installed media player…': 'යෙදුමේම වීඩියෝ වාදකයට මෙම ආකෘතිය වාදනය කළ නොහැක. ස්ථාපිත වෙනත් වාදකයක් උත්සාහ කරයි…',
+    };
+    return messages[value] ?? AppLanguage.text(value);
+  }
+
   void _message(String value) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(value)));
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(_localizedMessage(value))),
+    );
   }
 
   Future<bool> _unlockFolderIfNeeded(Directory directory) async {
