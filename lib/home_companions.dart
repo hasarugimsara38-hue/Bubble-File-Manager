@@ -126,11 +126,11 @@ class _HomeCompanionsPanelState extends State<HomeCompanionsPanel>
             ),
             (
               speaker: 'Hasaru',
-              message: 'Yunadie මගේ හොඳම යාළුවා. අපි දෙන්නා එකම Aqua කණ්ඩායමේ සහකරුවන්. අලුත් දේවල් ගවේෂණය කරන්න අපි හැමදාම සූදානම්!',
+              message: 'Yunadie මගේ පෙම්වතිය. අපි දෙන්නා සැබෑ ජීවිතයේත් ආදරවන්ත යුවළක්. ඒ වගේම මේ App එකේ Aqua කණ්ඩායමේ සහකරුවන් විදිහට ඔයාට උදව් කරනවා!',
             ),
             (
               speaker: 'Yunadie',
-              message: 'අද අපේ පළමු Aqua මෙහෙයුම පටන් ගන්නයි යන්නේ! ඔයාගේ ගොනු සොයාගෙන, ඡායාරූප පිළිවෙළට සකස් කරලා, වැදගත් දේවල් ආරක්ෂිතව තබමු. අපි පටන් ගමුද?',
+              message: 'Hasaru මගේ පෙම්වතා. අපි දෙන්නා සැබෑ ජීවිතයේ ආදරවන්තයින්. දැන් අපේ පළමු Aqua මෙහෙයුම පටන් ගමු—ඔයාගේ ගොනු සොයාගෙන, ඡායාරූප පිළිවෙළට සකස් කරලා, වැදගත් දේවල් ආරක්ෂිතව තබමු!',
             ),
           ]
         : <({String speaker, String message})>[
@@ -144,11 +144,11 @@ class _HomeCompanionsPanelState extends State<HomeCompanionsPanel>
             ),
             (
               speaker: 'Hasaru',
-              message: 'Yunadie is my best friend. We are teammates in the Aqua crew, always ready to explore and help you.',
+              message: 'Yunadie is my girlfriend. We are a real-life couple, and we also work together as your Aqua companion team in this app.',
             ),
             (
               speaker: 'Yunadie',
-              message: 'Our first Aqua mission starts now! Let us find your files, organise your photos and keep important things safe. Shall we begin?',
+              message: 'Hasaru is my boyfriend. We are a real-life couple! Now, let us begin our first Aqua mission: find your files, organise your photos and keep important things safe.',
             ),
           ];
 
