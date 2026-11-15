@@ -1266,14 +1266,14 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
         final navigator = _navigatorKey.currentState;
         if (navigator == null) return;
         await navigator.push(MaterialPageRoute<void>(
-          builder: (_) => FaceAlbumsPage(targetDirectory: _root, accent: _accent),
+          builder: (_) => FaceAlbumsPage(targetDirectory: _root, accent: _accent, onLanguageChanged: _selectLanguage),
         ));
         break;
       case 'locations':
         final navigator = _navigatorKey.currentState;
         if (navigator == null) return;
         await navigator.push(MaterialPageRoute<void>(
-          builder: (_) => LocationAlbumsPage(targetDirectory: _root, accent: _accent),
+          builder: (_) => LocationAlbumsPage(targetDirectory: _root, accent: _accent, onLanguageChanged: _selectLanguage),
         ));
         break;
       case 'assistant':
@@ -2338,6 +2338,7 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
           builder: (_) => LocationAlbumsPage(
             targetDirectory: _root,
             accent: _accent,
+            onLanguageChanged: _selectLanguage,
           ),
         ));
       } else if (title == 'Face Albums') {
@@ -2345,6 +2346,7 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
           builder: (_) => FaceAlbumsPage(
             targetDirectory: _root,
             accent: _accent,
+            onLanguageChanged: _selectLanguage,
           ),
         ));
       } else if (title == 'All files') {
