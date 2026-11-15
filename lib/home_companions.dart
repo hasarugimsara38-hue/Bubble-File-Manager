@@ -8,10 +8,12 @@ class HomeCompanionsPanel extends StatefulWidget {
   const HomeCompanionsPanel({
     super.key,
     required this.accent,
+    required this.isSinhala,
     required this.onAction,
   });
 
   final Color accent;
+  final bool isSinhala;
   final ValueChanged<String> onAction;
 
   @override
@@ -98,12 +100,14 @@ class _HomeCompanionsPanelState extends State<HomeCompanionsPanel> {
   void _showWelcome({bool initial = false}) {
     _setDialogue(
       speaker: 'Hasaru',
-      message: 'හායි! මම Hasaru. මම ඔයාට files පිළිවෙළට තබාගන්න උදව් කරන්නම්. අද අපි මොනවා බලමුද?',
+      message: widget.isSinhala
+          ? 'හායි! මම Hasaru. ඔයාගේ ගොනු පිළිවෙළට තබාගන්න මම උදව් කරන්නම්. අද අපි මොනවා බලමුද?'
+          : 'Hi! I am Hasaru. I can help you keep your files organised. What would you like to explore today?',
       choices: const <_CompanionChoice>[
-        _CompanionChoice('Browse files', 'files_intro'),
-        _CompanionChoice('Photos & videos', 'media_intro'),
-        _CompanionChoice('Special features', 'features_intro'),
-        _CompanionChoice('Ask Assistant', 'assistant'),
+        _CompanionChoice(widget.isSinhala ? 'ගොනු පිරික්සන්න' : 'Browse files', 'files_intro'),
+        _CompanionChoice(widget.isSinhala ? 'ඡායාරූප සහ වීඩියෝ' : 'Photos & videos', 'media_intro'),
+        _CompanionChoice(widget.isSinhala ? 'විශේෂාංග' : 'Special features', 'features_intro'),
+        _CompanionChoice(widget.isSinhala ? 'සහායකයාගෙන් අසන්න' : 'Ask Assistant', 'assistant'),
       ],
       initial: initial,
     );
@@ -114,35 +118,41 @@ class _HomeCompanionsPanelState extends State<HomeCompanionsPanel> {
       case 'files_intro':
         _setDialogue(
           speaker: 'Hasaru',
-          message: 'නියමයි! ඔයාගේ folders, documents සහ downloads එකම තැනකින් බලන්න පුළුවන්. දැන් Files විවෘත කරමුද?',
+          message: widget.isSinhala
+              ? 'නියමයි! ෆෝල්ඩර්, ලේඛන සහ බාගත කළ ගොනු එකම තැනකින් බලන්න පුළුවන්. දැන් ගොනු විවෘත කරමුද?'
+              : 'Great! You can browse folders, documents and downloads in one place. Shall we open Files?',
           choices: const <_CompanionChoice>[
-            _CompanionChoice('Open Files', 'files'),
-            _CompanionChoice('Back', 'back'),
+            _CompanionChoice(widget.isSinhala ? 'ගොනු විවෘත කරන්න' : 'Open Files', 'files'),
+            _CompanionChoice(widget.isSinhala ? 'ආපසු' : 'Back', 'back'),
           ],
         );
         break;
       case 'media_intro':
         _setDialogue(
           speaker: 'Yunadie',
-          message: 'හායි! මම Yunadie. ඔයාගේ photos, videos සහ audio files වර්ග අනුව පහසුවෙන් බලන්න පුළුවන්. මොනවාද බලන්න ඕනේ?',
+          message: widget.isSinhala
+              ? 'හායි! මම Yunadie. ඡායාරූප, වීඩියෝ සහ ශ්‍රව්‍ය ගොනු වර්ග අනුව පහසුවෙන් බලන්න පුළුවන්. මොනවාද බලන්න කැමති?'
+              : 'Hi! I am Yunadie. You can browse photos, videos and audio files by category. What would you like to see?',
           choices: const <_CompanionChoice>[
-            _CompanionChoice('Images', 'images'),
-            _CompanionChoice('Videos', 'videos'),
-            _CompanionChoice('Audio', 'audio'),
-            _CompanionChoice('Back', 'back'),
+            _CompanionChoice(widget.isSinhala ? 'රූප' : 'Images', 'images'),
+            _CompanionChoice(widget.isSinhala ? 'වීඩියෝ' : 'Videos', 'videos'),
+            _CompanionChoice(widget.isSinhala ? 'ශ්‍රව්‍ය' : 'Audio', 'audio'),
+            _CompanionChoice(widget.isSinhala ? 'ආපසු' : 'Back', 'back'),
           ],
         );
         break;
       case 'features_intro':
         _setDialogue(
           speaker: 'Yunadie',
-          message: 'අපේ විශේෂ දේවල් බලමු! Secret Vault එකෙන් files ආරක්ෂා කරන්නත්, Face සහ Location Albums වලින් photos පිළිවෙළට සකස් කරන්නත් පුළුවන්.',
+          message: widget.isSinhala
+              ? 'අපේ විශේෂාංග බලමු! රහස් සුරක්ෂිතාගාරයෙන් ගොනු ආරක්ෂා කරන්නත්, මුහුණු සහ ස්ථාන ඇල්බමවලින් ඡායාරූප පිළිවෙළට සකස් කරන්නත් පුළුවන්.'
+              : 'Let us explore the special features! The Secret Vault protects files, while Face and Location Albums help organise your photos.',
           choices: const <_CompanionChoice>[
-            _CompanionChoice('Secret Vault', 'vault'),
-            _CompanionChoice('Face Albums', 'faces'),
-            _CompanionChoice('Location Albums', 'locations'),
-            _CompanionChoice('More tools', 'tools'),
-            _CompanionChoice('Back', 'back'),
+            _CompanionChoice(widget.isSinhala ? 'රහස් සුරක්ෂිතාගාරය' : 'Secret Vault', 'vault'),
+            _CompanionChoice(widget.isSinhala ? 'මුහුණු ඇල්බම' : 'Face Albums', 'faces'),
+            _CompanionChoice(widget.isSinhala ? 'ස්ථාන ඇල්බම' : 'Location Albums', 'locations'),
+            _CompanionChoice(widget.isSinhala ? 'තවත් මෙවලම්' : 'More tools', 'tools'),
+            _CompanionChoice(widget.isSinhala ? 'ආපසු' : 'Back', 'back'),
           ],
         );
         break;
@@ -206,12 +216,12 @@ class _HomeCompanionsPanelState extends State<HomeCompanionsPanel> {
           contentPadding: const EdgeInsets.symmetric(horizontal: 13, vertical: 2),
           leading: Icon(Icons.chat_bubble_rounded, color: widget.accent),
           title: const Text(
-            'Talk with Hasaru & Yunadie',
+            widget.isSinhala ? 'Hasaru සහ Yunadie සමඟ කතා කරන්න' : 'Talk with Hasaru & Yunadie',
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 13),
           ),
-          subtitle: const Text('Your Aqua companions are here', style: TextStyle(color: Colors.white60, fontSize: 11)),
+          subtitle: Text(widget.isSinhala ? 'ඔබේ Aqua මිතුරන් මෙහි සිටී' : 'Your Aqua companions are here', style: const TextStyle(color: Colors.white60, fontSize: 11)),
           trailing: IconButton(
-            tooltip: 'Show companions',
+            tooltip: widget.isSinhala ? 'චරිත පෙන්වන්න' : 'Show companions',
             onPressed: () => setState(() => _collapsed = false),
             icon: const Icon(Icons.expand_more_rounded, color: Colors.white),
           ),
@@ -243,17 +253,17 @@ class _HomeCompanionsPanelState extends State<HomeCompanionsPanel> {
               const SizedBox(width: 7),
               const Expanded(
                 child: Text(
-                  'HASARU & YUNADIE',
+                  widget.isSinhala ? 'HASARU සහ YUNADIE' : 'HASARU & YUNADIE',
                   style: TextStyle(color: Colors.white, fontSize: 12, letterSpacing: 1.1, fontWeight: FontWeight.w800),
                 ),
               ),
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(color: Colors.white.withOpacity(.08), borderRadius: BorderRadius.circular(20)),
-                child: const Text('Aqua companions', style: TextStyle(color: Colors.white70, fontSize: 10)),
+                child: Text(widget.isSinhala ? 'Aqua මිතුරන්' : 'Aqua companions', style: const TextStyle(color: Colors.white70, fontSize: 10)),
               ),
               IconButton(
-                tooltip: 'Minimize companions',
+                tooltip: widget.isSinhala ? 'චරිත හකුළන්න' : 'Minimize companions',
                 visualDensity: VisualDensity.compact,
                 onPressed: () => setState(() => _collapsed = true),
                 icon: const Icon(Icons.keyboard_arrow_up_rounded, color: Colors.white70),
@@ -301,7 +311,7 @@ class _HomeCompanionsPanelState extends State<HomeCompanionsPanel> {
                           tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                           foregroundColor: widget.accent,
                         ),
-                        child: const Text('Show all', style: TextStyle(fontSize: 10)),
+                        child: Text(widget.isSinhala ? 'සියල්ල පෙන්වන්න' : 'Show all', style: const TextStyle(fontSize: 10)),
                       ),
                   ],
                 ),
