@@ -6,6 +6,7 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'advanced_tools.dart';
+import 'app_language.dart';
 import 'ai_assistant.dart';
 import 'face_albums.dart';
 import 'home_companions.dart';
@@ -286,13 +287,20 @@ class _StorageDropPainter extends CustomPainter {
 }
 
 class AquaApp extends StatefulWidget {
-  const AquaApp({super.key});
+  const AquaApp({super.key, this.initialLanguage});
+
+  /// Optional language override for deterministic widget tests.
+  final String? initialLanguage;
   @override
   State<AquaApp> createState() => _AquaAppState();
 }
 
 class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTickerProviderStateMixin {
+  static const FlutterSecureStorage _languageStore = FlutterSecureStorage();
   final GlobalKey<NavigatorState> _navigatorKey = GlobalKey<NavigatorState>();
+  bool _languageReady = false;
+  bool _hasSelectedLanguage = false;
+  bool _servicesStarted = false;
   int _tab = 0;
   int _theme = 0;
   bool _gravity = true;
@@ -346,6 +354,13 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
   @override
   void initState() {
     super.initState();
+    if (widget.initialLanguage != null) {
+      AppLanguage.code = widget.initialLanguage == 'si' ? 'si' : 'en';
+      _languageReady = true;
+      _hasSelectedLanguage = true;
+    } else {
+      _restoreLanguagePreference();
+    }
     WidgetsBinding.instance.addObserver(this);
     _cardWaterMotion = AnimationController(vsync: this, duration: const Duration(milliseconds: 6200))..repeat();
     _waterSensor = accelerometerEventStream().listen((event) {
@@ -361,7 +376,50 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
     Future<void>.delayed(const Duration(milliseconds: 3200), () {
       if (mounted) setState(() => _showSplash = false);
     });
+  }
+
+  Future<void> _restoreLanguagePreference() async {
+    String? saved;
+    try {
+      saved = await _languageStore.read(key: 'app_language');
+    } catch (_) {
+      // A fresh installation still offers the language picker if secure
+      // storage is temporarily unavailable.
+    }
+    if (!mounted) return;
+    if (saved == 'si' || saved == 'en') {
+      AppLanguage.code = saved!;
+      setState(() {
+        _languageReady = true;
+        _hasSelectedLanguage = true;
+      });
+      _startAppServices();
+    } else {
+      setState(() => _languageReady = true);
+    }
+  }
+
+  Future<void> _selectLanguage(String language) async {
+    final selected = language == 'si' ? 'si' : 'en';
+    AppLanguage.code = selected;
+    try {
+      await _languageStore.write(key: 'app_language', value: selected);
+    } catch (_) {
+      // Keep the selected language for this session even if storage fails.
+    }
+    if (!mounted) return;
+    setState(() {
+      _languageReady = true;
+      _hasSelectedLanguage = true;
+    });
+    _startAppServices();
+  }
+
+  void _startAppServices() {
+    if (_servicesStarted) return;
+    _servicesStarted = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
       _requestStorage();
       _initializeRecycleBin();
     });
@@ -1901,7 +1959,11 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
       ),
       home: _showSplash
           ? const BubbleSplashScreen()
-          : Scaffold(
+          : !_languageReady
+              ? const _LanguageLoadingScreen()
+              : !_hasSelectedLanguage
+                  ? LanguageSelectionScreen(onSelected: _selectLanguage)
+                  : Scaffold(
         body: Listener(
           behavior: HitTestBehavior.translucent,
           onPointerDown: (event) {
@@ -1954,15 +2016,15 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
     child: Row(children: [
       Icon(Icons.folder_copy_rounded, color: _accent, size: 28),
       const SizedBox(width: 11),
-      Expanded(child: Text('Bubble File Manager', style: TextStyle(
+      Expanded(child: Text(AppLanguage.text('Bubble File Manager'), style: TextStyle(
         color: foreground, fontSize: 18, fontWeight: FontWeight.w800))),
       IconButton(
-        tooltip: 'Search files',
+        tooltip: AppLanguage.text('Search files'),
         onPressed: () => setState(() { _tab = 1; _globalSearchActive = true; }),
         icon: Icon(Icons.search_rounded, color: foreground),
       ),
       IconButton(
-        tooltip: 'Settings',
+        tooltip: AppLanguage.text('Settings'),
         onPressed: () => setState(() => _tab = 2),
         icon: Icon(Icons.settings_outlined, color: foreground),
       ),
@@ -1974,17 +2036,17 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
     key: const ValueKey<String>('homeList'),
     padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
     children: [
-      Text('My Files', style: TextStyle(fontSize: 30, fontWeight: FontWeight.w800, color: foreground)),
+      Text(AppLanguage.text('My Files'), style: TextStyle(fontSize: 30, fontWeight: FontWeight.w800, color: foreground)),
       const SizedBox(height: 5),
-      Text('Manage files on your device', style: TextStyle(fontSize: 13, color: foreground.withOpacity(.62))),
+      Text(AppLanguage.text('Manage files on your device'), style: TextStyle(fontSize: 13, color: foreground.withOpacity(.62))),
       const SizedBox(height: 14),
-      HomeCompanionsPanel(accent: _accent, onAction: _handleCompanionAction),
+      HomeCompanionsPanel(accent: _accent, isSinhala: AppLanguage.isSinhala, onAction: _handleCompanionAction),
       const SizedBox(height: 22),
       _standardCard(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
           Icon(Icons.phone_android_rounded, color: _accent, size: 23),
           const SizedBox(width: 10),
-          const Expanded(child: Text('Internal storage', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700))),
+          Expanded(child: Text(AppLanguage.text('Internal storage'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700))),
           IconButton(
             tooltip: 'Refresh storage',
             visualDensity: VisualDensity.compact,
@@ -1996,7 +2058,7 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
           Text(_storageMessage, style: TextStyle(fontSize: 12, color: foreground.withOpacity(.65))),
           Align(alignment: Alignment.centerLeft, child: TextButton(
             onPressed: _checkingPermission ? null : _requestStorage,
-            child: const Text('Allow access'),
+            child: Text(AppLanguage.text('Allow access')),
           )),
         ] else ...[
           const SizedBox(height: 6),
@@ -2029,7 +2091,7 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
         ],
       ])),
       const SizedBox(height: 24),
-      Text('Categories', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800, color: foreground)),
+      Text(AppLanguage.text('Categories'), style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800, color: foreground)),
       const SizedBox(height: 12),
       GridView.count(
         shrinkWrap: true,
@@ -2053,8 +2115,8 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
       ),
       const SizedBox(height: 22),
       Row(children: [
-        Expanded(child: Text('Storage locations', style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800, color: foreground))),
-        TextButton(onPressed: _refreshStorageVolumes, child: const Text('Refresh')),
+        Expanded(child: Text(AppLanguage.text('Storage locations'), style: TextStyle(fontSize: 19, fontWeight: FontWeight.w800, color: foreground))),
+        TextButton(onPressed: _refreshStorageVolumes, child: Text(AppLanguage.text('Refresh'))),
       ]),
       _standardCard(child: Column(children: [
         _locationRow('Internal storage', Icons.phone_android_rounded, _root.path, () {
@@ -2075,8 +2137,8 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
       _standardCard(child: ListTile(
         contentPadding: EdgeInsets.zero,
         leading: Icon(Icons.smart_toy_outlined, color: _accent, size: 27),
-        title: const Text('AI Assistant', style: TextStyle(fontWeight: FontWeight.w700)),
-        subtitle: const Text('Get help with storage, files, Vault and app features', style: TextStyle(fontSize: 11)),
+        title: Text(AppLanguage.text('AI Assistant'), style: const TextStyle(fontWeight: FontWeight.w700)),
+        subtitle: Text(AppLanguage.text('Get help with storage, files, Vault and app features'), style: const TextStyle(fontSize: 11)),
         trailing: const Icon(Icons.chevron_right_rounded),
         onTap: () => _navigatorKey.currentState?.push(MaterialPageRoute<void>(
           builder: (_) => AquaAiAssistantPage(accent: _accent),
@@ -2086,8 +2148,8 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
       _standardCard(child: ListTile(
         contentPadding: EdgeInsets.zero,
         leading: Icon(Icons.auto_awesome_rounded, color: _accent, size: 27),
-        title: const Text('Bubble special features', style: TextStyle(fontWeight: FontWeight.w700)),
-        subtitle: const Text('Secret Vault • Water bubbles • Gravity • AI tools', style: TextStyle(fontSize: 11)),
+        title: Text(AppLanguage.text('Bubble special features'), style: const TextStyle(fontWeight: FontWeight.w700)),
+        subtitle: Text(AppLanguage.text('Secret Vault • Water bubbles • Gravity • AI tools'), style: const TextStyle(fontSize: 11)),
         trailing: const Icon(Icons.chevron_right_rounded),
         onTap: _openAdvancedTools,
       )),
@@ -2098,7 +2160,7 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
     ListTile(
       contentPadding: EdgeInsets.zero,
       leading: Icon(icon, color: _accent),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
+      title: Text(AppLanguage.text(title), style: const TextStyle(fontWeight: FontWeight.w600)),
       subtitle: Text(path, maxLines: 1, overflow: TextOverflow.ellipsis,
         style: const TextStyle(fontSize: 10, color: Colors.grey)),
       trailing: const Icon(Icons.chevron_right_rounded),
@@ -2132,7 +2194,7 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
     child: _glass(child: Row(children: [
       Icon(icon, color: _accent, size: 25),
       const SizedBox(width: 10),
-      Expanded(child: Text(title, style: const TextStyle(fontWeight: FontWeight.w600))),
+      Expanded(child: Text(AppLanguage.text(title), style: const TextStyle(fontWeight: FontWeight.w600))),
       const Icon(Icons.chevron_right_rounded, color: Colors.white38, size: 18),
     ])),
   );
@@ -2143,7 +2205,7 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
       Padding(
         padding: const EdgeInsets.fromLTRB(19, 8, 19, 10),
         child: Row(children: [
-          Expanded(child: Text(_fileCategory, style: TextStyle(fontSize: 27,
+          Expanded(child: Text(AppLanguage.text(_fileCategory), style: TextStyle(fontSize: 27,
             fontWeight: FontWeight.w800, color: foreground))),
           IconButton(onPressed: _scanningDuplicates ? null : _findDuplicates, tooltip: 'Find identical files', icon: Icon(Icons.copy_all_rounded, color: _accent)),
           if (_clipboardEntity != null)
@@ -2158,7 +2220,7 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
           child: _glass(child: Column(mainAxisSize: MainAxisSize.min, children: [
             Icon(Icons.folder_off_rounded, color: _accent, size: 42),
             const SizedBox(height: 12),
-            const Text('Storage permission needed', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Text(AppLanguage.text('Storage permission needed'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
             Text(_storageMessage, textAlign: TextAlign.center,
               style: const TextStyle(color: Colors.white60, height: 1.4)),
@@ -2368,11 +2430,11 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
       children: [
         Text('Recycle Bin', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: foreground)),
         const SizedBox(height: 8),
-        const Text('Items stay here for 30 days. Choosing Delete again starts a separate 2-hour recovery period.',
+        Text(AppLanguage.text('Items stay here for 30 days. Choosing Delete again starts a separate 2-hour recovery period.'),
           style: TextStyle(fontSize: 12, color: Colors.white60, height: 1.4)),
         const SizedBox(height: 14),
         if (_recycleRecords.isEmpty)
-          _glass(child: const Text('Recycle Bin is empty.', style: TextStyle(color: Colors.white70)))
+          _glass(child: Text(AppLanguage.text('Recycle Bin is empty.'), style: const TextStyle(color: Colors.white70)))
         else ..._recycleRecords.map((record) => Padding(
           padding: const EdgeInsets.only(bottom: 9),
           child: _glass(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -2400,7 +2462,7 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
       Text('Settings', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: foreground)),
       const SizedBox(height: 17),
       _glass(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Text('ACCENT COLOR', style: TextStyle(fontSize: 10, letterSpacing: 1.8, color: Colors.white60)),
+        Text(AppLanguage.text('ACCENT COLOR'), style: const TextStyle(fontSize: 10, letterSpacing: 1.8, color: Colors.white60)),
         const SizedBox(height: 16),
         Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: List.generate(aquaAccents.length, (i) =>
           GestureDetector(onTap: () => setState(() => _theme = i),
@@ -2413,13 +2475,13 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
         ),
       ])),
       const SizedBox(height: 12),
-      _switchTile('Show hidden files', 'Include dot-prefixed files and folders', _showHidden,
+      _switchTile(AppLanguage.text('Show hidden files'), AppLanguage.text('Include dot-prefixed files and folders'), _showHidden,
         (v) => setState(() => _showHidden = v)),
-      _switchTile('Gravity bubbles', 'Move with your phone tilt sensor', _gravity,
+      _switchTile(AppLanguage.text('Gravity bubbles'), AppLanguage.text('Move with your phone tilt sensor'), _gravity,
         (v) => setState(() => _gravity = v)),
-      _switchTile('Bubbles', 'Show or hide floating bubbles and bubble effects', _animations,
+      _switchTile(AppLanguage.text('Bubbles'), AppLanguage.text('Show or hide floating bubbles and bubble effects'), _animations,
         (v) => setState(() => _animations = v)),
-      _switchTile('Water', 'Show or hide the liquid layer inside every glass card', _waterEnabled,
+      _switchTile(AppLanguage.text('Water'), AppLanguage.text('Show or hide the liquid layer inside every glass card'), _waterEnabled,
         (v) => setState(() => _waterEnabled = v)),
       _switchTile('Performance mode', 'Use fewer bubbles and less motion work', _performance,
         (v) => setState(() => _performance = v)),
@@ -2448,11 +2510,11 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
         (v) => setState(() => _light = v)),
       const SizedBox(height: 12),
       _glass(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Text('STORAGE ACCESS', style: TextStyle(fontSize: 10, letterSpacing: 1.8, color: Colors.white60)),
+        Text(AppLanguage.text('STORAGE ACCESS'), style: const TextStyle(fontSize: 10, letterSpacing: 1.8, color: Colors.white60)),
         const SizedBox(height: 8),
         Text(_storageMessage, style: const TextStyle(fontSize: 12, color: Colors.white70)),
         Align(alignment: Alignment.centerRight,
-          child: TextButton(onPressed: _requestStorage, child: const Text('Check permission'))),
+          child: TextButton(onPressed: _requestStorage, child: Text(AppLanguage.text('Check permission')))),
       ])),
       const SizedBox(height: 12),
       _glass(child: const Text(
@@ -2502,11 +2564,11 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
     indicatorColor: _accent.withOpacity(.18),
     selectedIndex: _tab,
     onDestinationSelected: (index) => setState(() => _tab = index),
-    destinations: const [
-      NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home_rounded), label: 'Home'),
-      NavigationDestination(icon: Icon(Icons.folder_outlined), selectedIcon: Icon(Icons.folder_rounded), label: 'Files'),
-      NavigationDestination(icon: Icon(Icons.settings_outlined), selectedIcon: Icon(Icons.settings_rounded), label: 'Settings'),
-      NavigationDestination(icon: Icon(Icons.delete_outline_rounded), selectedIcon: Icon(Icons.delete_rounded), label: 'Recycle bin'),
+    destinations: [
+      NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home_rounded), label: AppLanguage.text('Home')),
+      NavigationDestination(icon: Icon(Icons.folder_outlined), selectedIcon: Icon(Icons.folder_rounded), label: AppLanguage.text('Files')),
+      NavigationDestination(icon: Icon(Icons.settings_outlined), selectedIcon: Icon(Icons.settings_rounded), label: AppLanguage.text('Settings')),
+      NavigationDestination(icon: Icon(Icons.delete_outline_rounded), selectedIcon: Icon(Icons.delete_rounded), label: AppLanguage.text('Recycle bin')),
     ],
   );
 
@@ -3100,3 +3162,46 @@ class _SecretBoxGesturePainter extends CustomPainter {
   bool shouldRepaint(covariant _SecretBoxGesturePainter oldDelegate) => true;
 }
 
+
+
+class LanguageSelectionScreen extends StatelessWidget {
+  const LanguageSelectionScreen({super.key, required this.onSelected});
+  final ValueChanged<String> onSelected;
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    backgroundColor: const Color(0xFF04141E),
+    body: SafeArea(child: Center(child: Padding(
+      padding: const EdgeInsets.all(28),
+      child: Column(mainAxisSize: MainAxisSize.min, children: [
+        const Icon(Icons.translate_rounded, color: Color(0xFF20E4E8), size: 54),
+        const SizedBox(height: 20),
+        const Text('Choose your language', style: TextStyle(color: Colors.white, fontSize: 24, fontWeight: FontWeight.w800)),
+        const SizedBox(height: 7),
+        const Text('ඔබේ භාෂාව තෝරන්න', style: TextStyle(color: Colors.white70, fontSize: 20)),
+        const SizedBox(height: 24),
+        SizedBox(width: double.infinity, child: FilledButton(
+          onPressed: () => onSelected('si'),
+          child: const Text('සිංහල'),
+        )),
+        const SizedBox(height: 10),
+        SizedBox(width: double.infinity, child: OutlinedButton(
+          onPressed: () => onSelected('en'),
+          child: const Text('English'),
+        )),
+        const SizedBox(height: 12),
+        const Text('You can change this later in Settings. / පසුව සැකසුම් තුළින් වෙනස් කළ හැක.',
+          textAlign: TextAlign.center, style: TextStyle(color: Colors.white54, fontSize: 11)),
+      ]),
+    ))),
+  );
+}
+
+class _LanguageLoadingScreen extends StatelessWidget {
+  const _LanguageLoadingScreen();
+  @override
+  Widget build(BuildContext context) => const Scaffold(
+    backgroundColor: Color(0xFF04141E),
+    body: Center(child: CircularProgressIndicator()),
+  );
+}
