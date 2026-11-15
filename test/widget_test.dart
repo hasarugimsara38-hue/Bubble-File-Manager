@@ -32,16 +32,20 @@ void main() {
     );
     expect(find.text('Categories'), findsOneWidget);
 
+    final assistantShortcut =
+        find.byKey(const ValueKey<String>('homeAiAssistantShortcut'));
     await tester.scrollUntilVisible(
-      find.text('AI Assistant'),
+      assistantShortcut,
       250,
       scrollable: find.descendant(
         of: find.byKey(const ValueKey<String>('homeList')),
         matching: find.byType(Scrollable),
       ).first,
     );
-    await tester.tap(find.text('AI Assistant'));
-    await tester.pump(const Duration(milliseconds: 350));
+    expect(assistantShortcut, findsOneWidget);
+    await tester.tap(assistantShortcut);
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(find.byType(AquaAiAssistantPage), findsOneWidget);
     expect(find.text('Aqua Assistant'), findsOneWidget);
     expect(find.text('Offline guidance'), findsOneWidget);
   });
