@@ -59,7 +59,7 @@ class _AquaAdvancedToolsState extends State<AquaAdvancedTools> {
   String _performanceSummary = '';
 
   void _say(String value) {
-    if (mounted) setState(() => _status = value);
+    if (mounted) setState(() => _status = AppLanguage.text(value));
   }
 
   Future<Directory> _vaultDirectory() async {
@@ -676,15 +676,15 @@ class _AquaAdvancedToolsState extends State<AquaAdvancedTools> {
   Widget _toolCard(String title, String subtitle, IconData icon, VoidCallback action) =>
     Card(color: const Color(0xFF12313F).withOpacity(.92), child: ListTile(
       leading: Icon(icon, color: widget.accent, size: 28),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w700)),
-      subtitle: Text(subtitle, style: const TextStyle(color: Colors.white70, fontSize: 11)),
+      title: Text(AppLanguage.text(title), style: const TextStyle(fontWeight: FontWeight.w700)),
+      subtitle: Text(AppLanguage.text(subtitle), style: const TextStyle(color: Colors.white70, fontSize: 11)),
       trailing: const Icon(Icons.chevron_right),
       onTap: _busy ? null : action,
     ));
 
   Widget _diagnosticRow(String label, String value) => ListTile(
     dense: true,
-    title: Text(label, style: const TextStyle(fontSize: 12, color: Colors.white70)),
+    title: Text(AppLanguage.text(label), style: const TextStyle(fontSize: 12, color: Colors.white70)),
     subtitle: Text(value, style: const TextStyle(fontSize: 11)),
   );
 
@@ -704,7 +704,7 @@ class _AquaAdvancedToolsState extends State<AquaAdvancedTools> {
   @override
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: const Color(0xFF071E2A),
-    appBar: AppBar(title: const Text('Aqua Advanced Tools'), backgroundColor: Colors.transparent),
+    appBar: AppBar(title: Text(AppLanguage.text('Aqua Advanced Tools')), backgroundColor: Colors.transparent),
     body: ListView(padding: const EdgeInsets.all(16), children: [
       if (_busy) const LinearProgressIndicator(),
       Text(_status, style: const TextStyle(color: Colors.white70)),
@@ -727,14 +727,14 @@ class _AquaAdvancedToolsState extends State<AquaAdvancedTools> {
       }),
       if (_geoPhotos.isNotEmpty) ...[
         const SizedBox(height: 8),
-        Text('Photo locations (${_geoPhotos.length})', style: const TextStyle(fontWeight: FontWeight.bold)),
+        Text(AppLanguage.text('Photo locations') + ' (${_geoPhotos.length})', style: const TextStyle(fontWeight: FontWeight.bold)),
         ..._geoGroups.entries.map((entry) => Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             ListTile(
               leading: const Icon(Icons.place, color: Colors.cyanAccent),
-              title: Text('Location group • ${entry.value.length} photo(s)'),
-              subtitle: Text('Approx. ${entry.key}'),
+              title: Text((AppLanguage.isSinhala ? 'ස්ථාන කණ්ඩායම • ' : 'Location group • ') + '${entry.value.length} ඡායාරූප'),
+              subtitle: Text((AppLanguage.isSinhala ? 'ආසන්න වශයෙන් ' : 'Approx. ') + entry.key),
               trailing: IconButton(icon: const Icon(Icons.map), onPressed: () => _openMap(entry.value.first)),
             ),
             ...entry.value.map((photo) => Padding(
@@ -748,7 +748,7 @@ class _AquaAdvancedToolsState extends State<AquaAdvancedTools> {
       _toolCard('Smart Cleanup suggestions', 'Find large and older files; never delete automatically', Icons.cleaning_services, _smartCleanup),
       if (_cleanupSuggestions.isNotEmpty) ...[
         const SizedBox(height: 8),
-        Text('Review suggestions (${_cleanupSuggestions.length})', style: const TextStyle(fontWeight: FontWeight.bold)),
+        Text(AppLanguage.text('Review suggestions') + ' (${_cleanupSuggestions.length})', style: const TextStyle(fontWeight: FontWeight.bold)),
         ..._cleanupSuggestions.take(100).map((file) => ListTile(
           leading: const Icon(Icons.insert_drive_file_outlined),
           title: Text(file.uri.pathSegments.last, maxLines: 1, overflow: TextOverflow.ellipsis),
@@ -782,7 +782,7 @@ class _AquaAdvancedToolsState extends State<AquaAdvancedTools> {
         ));
       }),
       const SizedBox(height: 12),
-      const Text('Privacy: photo GPS metadata is processed locally. Map tiles are requested from OpenStreetMap only when you open a map. Encrypted private files stay on this device; keep authentication details safe.', style: TextStyle(color: Colors.white54, fontSize: 11)),
+      Text(AppLanguage.text('Privacy: photo GPS metadata is processed locally. Map tiles are requested from OpenStreetMap only when you open a map. Encrypted private files stay on this device; keep authentication details safe.'), style: const TextStyle(color: Colors.white54, fontSize: 11)),
     ]),
   );
 }
