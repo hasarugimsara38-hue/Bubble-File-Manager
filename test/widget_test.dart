@@ -43,8 +43,12 @@ void main() {
       ).first,
     );
     expect(assistantShortcut, findsOneWidget);
+    await tester.ensureVisible(assistantShortcut);
+    await tester.pump();
     await tester.tap(assistantShortcut);
-    await tester.pump(const Duration(milliseconds: 500));
+    // Allow the MaterialPageRoute transition to complete deterministically.
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump();
     expect(find.byType(AquaAiAssistantPage), findsOneWidget);
     expect(find.text('Aqua Assistant'), findsOneWidget);
     expect(find.text('Offline guidance'), findsOneWidget);
