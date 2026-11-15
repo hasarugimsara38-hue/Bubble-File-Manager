@@ -81,7 +81,7 @@ class _AquaAdvancedToolsState extends State<AquaAdvancedTools> {
   Future<String> _saltedDigest(String value) async {
     final random = math.Random.secure();
     final salt = base64Encode(List<int>.generate(16, (_) => random.nextInt(256)));
-    final digest = hashes.sha256.convert(utf8.encode('$salt:$value')).toString();
+    final digest = VaultCredentials.digest(salt, value);
     return '$salt:$digest';
   }
 
