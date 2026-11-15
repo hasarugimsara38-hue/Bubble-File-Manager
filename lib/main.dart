@@ -1198,7 +1198,7 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
                   )).toList(),
                 ),
           ),
-          actions: [TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text(AppLanguage.text('Close')))],
+          actions: [TextButton(onPressed: () => Navigator.pop(dialogContext), child: Text(AppLanguage.text('Close')))],
         ),
       );
     } catch (e) {
@@ -1324,9 +1324,9 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
         content: TextField(controller: controller, autofocus: true,
           decoration: InputDecoration(hintText: AppLanguage.text('Folder name'))),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text(AppLanguage.text('Cancel'))),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text(AppLanguage.text('Cancel'))),
           FilledButton(onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: const Text(AppLanguage.text('Create'))),
+            child: Text(AppLanguage.text('Create'))),
         ],
       ),
     );
@@ -1348,9 +1348,9 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
         title: Text(AppLanguage.text('Rename')),
         content: TextField(controller: controller, autofocus: true),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text(AppLanguage.text('Cancel'))),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text(AppLanguage.text('Cancel'))),
           FilledButton(onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: const Text(AppLanguage.text('Save'))),
+            child: Text(AppLanguage.text('Save'))),
         ],
       ),
     );
@@ -1426,8 +1426,8 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
         content: TextField(controller: controller, obscureText: true,
           keyboardType: TextInputType.number, decoration: InputDecoration(labelText: AppLanguage.text('Folder PIN'))),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text(AppLanguage.text('Cancel'))),
-          FilledButton(onPressed: () => Navigator.pop(context, controller.text), child: const Text(AppLanguage.text('Unlock'))),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text(AppLanguage.text('Cancel'))),
+          FilledButton(onPressed: () => Navigator.pop(context, controller.text), child: Text(AppLanguage.text('Unlock'))),
         ],
       ),
     );
@@ -1449,8 +1449,8 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
           content: TextField(controller: controller, obscureText: true, keyboardType: TextInputType.number,
             decoration: InputDecoration(labelText: AppLanguage.text('Current PIN'))),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text(AppLanguage.text('Cancel'))),
-            FilledButton(onPressed: () => Navigator.pop(context, controller.text), child: const Text(AppLanguage.text('Remove lock'))),
+            TextButton(onPressed: () => Navigator.pop(context), child: Text(AppLanguage.text('Cancel'))),
+            FilledButton(onPressed: () => Navigator.pop(context, controller.text), child: Text(AppLanguage.text('Remove lock'))),
           ],
         ),
       );
@@ -1475,8 +1475,8 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
             decoration: InputDecoration(labelText: AppLanguage.text('Confirm PIN'))),
         ]),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text(AppLanguage.text('Cancel'))),
-          FilledButton(onPressed: () => Navigator.pop(context, first.text), child: const Text(AppLanguage.text('Protect'))),
+          TextButton(onPressed: () => Navigator.pop(context), child: Text(AppLanguage.text('Cancel'))),
+          FilledButton(onPressed: () => Navigator.pop(context, first.text), child: Text(AppLanguage.text('Protect'))),
         ],
       ),
     );
@@ -2356,7 +2356,7 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
         Expanded(child: _categoryScanBusy
           ? const Center(child: CircularProgressIndicator())
           : visibleItems.isEmpty
-          ? const Center(child: Text(AppLanguage.text('No matching files found'), style: TextStyle(color: Colors.white54)))
+          ? Center(child: Text(AppLanguage.text('No matching files found'), style: TextStyle(color: Colors.white54)))
           : _viewMode == 'Grid' || _viewMode == AppLanguage.text('Large thumbnails')
           ? GridView.builder(
               padding: const EdgeInsets.fromLTRB(18, 0, 18, 16),
@@ -2421,8 +2421,8 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
                         if (value == 'folder_pin' && item is Directory) _setFolderPin(item);
                       },
                       itemBuilder: (context) => [
-                        if (item is Directory) const PopupMenuItem(value: 'folder_pin', child: Text(AppLanguage.text('Set / remove in-app Folder PIN'))),
-                        const PopupMenuItem(value: 'copy', child: Text(AppLanguage.text('Copy'))),
+                        if (item is Directory) PopupMenuItem(value: 'folder_pin', child: Text(AppLanguage.text('Set / remove in-app Folder PIN'))),
+                        PopupMenuItem(value: 'copy', child: Text(AppLanguage.text('Copy'))),
                         PopupMenuItem(value: 'cut', child: Text(AppLanguage.text('Cut'))),
                         PopupMenuItem(value: 'rename', child: Text('Rename')),
                         PopupMenuItem(value: 'delete', child: Text(AppLanguage.text('Move to Recycle Bin'))),
