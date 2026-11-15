@@ -125,7 +125,7 @@ void main() {
     expect(find.text('Browse files'), findsOneWidget);
     expect(find.text('Photos & videos'), findsOneWidget);
     expect(
-      find.textContaining('Our first Aqua mission starts now!'),
+      find.textContaining('Hasaru is my boyfriend. We are a real-life couple!'),
       findsOneWidget,
     );
 
@@ -183,7 +183,7 @@ void main() {
     expect(find.text('ගොනු පිරික්සන්න'), findsOneWidget);
     expect(find.text('ඡායාරූප සහ වීඩියෝ'), findsOneWidget);
     expect(
-      find.textContaining('අද අපේ පළමු Aqua මෙහෙයුම'),
+      find.textContaining('Hasaru මගේ පෙම්වතා. අපි දෙන්නා සැබෑ ජීවිතයේ ආදරවන්තයින්.'),
       findsOneWidget,
     );
     await tester.tap(find.text('විශේෂාංග'));
