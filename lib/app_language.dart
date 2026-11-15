@@ -225,5 +225,18 @@ class AppLanguage {
     'Uses GPS coordinates embedded in photo metadata. Photos without GPS data cannot be assigned a real location.': 'ඡායාරූපයේ GPS දත්ත ඇතුළත් නම් පමණක් සැබෑ ස්ථානය හඳුනාගත හැකිය.',
     'Privacy: GPS metadata is processed locally. Opening the map loads map tiles from OpenStreetMap.': 'පෞද්ගලිකත්වය: GPS දත්ත උපාංගය තුළම සකසයි. සිතියම විවෘත කළ විට පමණක් OpenStreetMap දත්ත ලබාගනී.',
     'No location albums yet. Scan your photos to look for GPS metadata.': 'තවම ස්ථාන ඇල්බම නැත. GPS දත්ත සොයාගැනීමට ඡායාරූප පරීක්ෂා කරන්න.',
+    'The app detects faces and compares temporary similarity features on this phone. It does not name people or upload photos. Suggested groups can be wrong, so review them manually. Temporary face features are discarded when you leave this screen.': 'යෙදුම මෙම දුරකථනය තුළම මුහුණු හඳුනාගෙන සමානතා සසඳයි. පුද්ගලයන්ට නම් ලබා නොදෙන අතර ඡායාරූප උඩුගත නොකරයි. යෝජිත කණ්ඩායම් වැරදි විය හැකි බැවින් ඔබම පරීක්ෂා කරන්න. මෙම තිරයෙන් ඉවත් වූ විට තාවකාලික මුහුණු දත්ත මැකේ.',
+    'Accuracy note: lighting, camera angle, age changes, masks and low-resolution images can cause missed or incorrect matches. This is a photo-organising aid, not proof of someone’s identity.': 'ආලෝකය, කැමරා කෝණය, වයස් වෙනස්වීම්, මුහුණු ආවරණ සහ අඩු විභේදන රූප නිසා වැරදි හෝ අසම්පූර්ණ ගැළපීම් ඇති විය හැකිය. මෙය ඡායාරූප සංවිධානයට පමණක් උපකාරී වන මෙවලමකි; පුද්ගල අනන්‍යතාව තහවුරු කිරීමක් නොවේ.',
+    'To show names such as town or city, this will send the rounded GPS coordinates of each location group to OpenStreetMap Nominatim. It will not upload your photos. Allow up to 30 location lookups, with a short delay between requests?': 'නගර හෝ ගම් නාම පෙන්වීම සඳහා එක් එක් ස්ථාන කණ්ඩායමේ වටකුරු කළ GPS ඛණ්ඩාංක OpenStreetMap Nominatim වෙත යවයි. ඔබගේ ඡායාරූප යවන්නේ නැත. ස්ථාන 30ක් දක්වා සෙවීමට අවසර දෙනවාද?',
+    'Map tiles © OpenStreetMap contributors. Exact coordinates remain in this app; place-name lookup is optional.': 'සිතියම් දත්ත සඳහා OpenStreetMap දායකයන්ට ස්තුතියි. නිවැරදි ඛණ්ඩාංක මෙම යෙදුම තුළම පවතී; ස්ථාන නාම සෙවීම විකල්පයකි.',
+    'Show this group on map': 'මෙම කණ්ඩායම සිතියමේ පෙන්වන්න',
+    'Show photo location': 'ඡායාරූපයේ ස්ථානය පෙන්වන්න',
+    'Scan phone photos': 'දුරකථනයේ ඡායාරූප පරීක්ෂා කරන්න',
+    'Find place names online (optional)': 'අන්තර්ජාලයෙන් ස්ථාන නාම සොයන්න (විකල්ප)',
+    'Map data © OpenStreetMap contributors': 'සිතියම් දත්ත © OpenStreetMap දායකයන්',
+    'Location group': 'ස්ථාන කණ්ඩායම',
+    'Places found': 'හමු වූ ස්ථාන',
+    'Scan accessible photos': 'ප්‍රවේශ විය හැකි ඡායාරූප පරීක්ෂා කරන්න',
+    'Temporary face groups cleared from memory.': 'තාවකාලික මුහුණු කණ්ඩායම් මතකයෙන් ඉවත් කරන ලදී.',
   };
 }
