@@ -120,6 +120,33 @@ class _HomeCompanionsPanelState extends State<HomeCompanionsPanel>
     );
   }
 
+  void _greetCharacter(String name) {
+    final isHasaru = name == 'Hasaru';
+    _setDialogue(
+      speaker: name,
+      message: widget.isSinhala
+          ? (isHasaru
+              ? 'මම Hasaru! ගොනු, ෆෝල්ඩර් සහ බාගත කළ දේවල් සොයාගන්න මට කියන්න. අපි එකට පටන් ගමුද?'
+              : 'මම Yunadie! ඔයාගේ ඡායාරූප, වීඩියෝ සහ විශේෂ ඇල්බම සකස් කරගන්න මම උදව් කරන්නම්. මොනවා බලමුද?')
+          : (isHasaru
+              ? 'I am Hasaru! I can help you find files, folders and downloads. What shall we do first?'
+              : 'I am Yunadie! I can help you explore photos, videos and smart albums. What would you like to see?'),
+      choices: isHasaru
+          ? <_CompanionChoice>[
+              _CompanionChoice(widget.isSinhala ? 'ගොනු විවෘත කරන්න' : 'Open Files', 'files'),
+              _CompanionChoice(widget.isSinhala ? 'විශේෂාංග' : 'Special features', 'features_intro'),
+              _CompanionChoice(widget.isSinhala ? 'ආපසු' : 'Back', 'back'),
+            ]
+          : <_CompanionChoice>[
+              _CompanionChoice(widget.isSinhala ? 'ඡායාරූප' : 'Photos', 'images'),
+              _CompanionChoice(widget.isSinhala ? 'වීඩියෝ' : 'Videos', 'videos'),
+              _CompanionChoice(widget.isSinhala ? 'මුහුණු ඇල්බම' : 'Face Albums', 'faces'),
+              _CompanionChoice(widget.isSinhala ? 'ස්ථාන ඇල්බම' : 'Location Albums', 'locations'),
+              _CompanionChoice(widget.isSinhala ? 'ආපසු' : 'Back', 'back'),
+            ],
+    );
+  }
+
   void _choose(_CompanionChoice choice) {
     switch (choice.action) {
       case 'files_intro':
@@ -290,9 +317,13 @@ class _HomeCompanionsPanelState extends State<HomeCompanionsPanel>
                     Expanded(
                       child: Transform.translate(
                         offset: Offset(0, math.sin(phase) * 2.2),
-                        child: Semantics(
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () => _greetCharacter('Hasaru'),
+                          child: Semantics(
+                          button: true,
                           image: true,
-                          label: 'Hasaru anime companion',
+                          label: widget.isSinhala ? 'Hasaru සමඟ කතා කරන්න' : 'Talk to Hasaru',
                           child: Image.asset(
                             'assets/characters/hasaru_1080.png',
                             height: 188,
@@ -302,15 +333,20 @@ class _HomeCompanionsPanelState extends State<HomeCompanionsPanel>
                               child: Icon(Icons.person_rounded, color: Colors.white54, size: 64),
                             ),
                           ),
+                          ),
                         ),
                       ),
                     ),
                     Expanded(
                       child: Transform.translate(
                         offset: Offset(0, math.sin(phase + .85) * 2.2),
-                        child: Semantics(
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: () => _greetCharacter('Yunadie'),
+                          child: Semantics(
+                          button: true,
                           image: true,
-                          label: 'Yunadie anime companion',
+                          label: widget.isSinhala ? 'Yunadie සමඟ කතා කරන්න' : 'Talk to Yunadie',
                           child: Image.asset(
                             'assets/characters/yunadie_1080.png',
                             height: 188,
@@ -319,6 +355,7 @@ class _HomeCompanionsPanelState extends State<HomeCompanionsPanel>
                             errorBuilder: (context, error, stackTrace) => const Center(
                               child: Icon(Icons.person_rounded, color: Colors.white54, size: 64),
                             ),
+                          ),
                           ),
                         ),
                       ),
