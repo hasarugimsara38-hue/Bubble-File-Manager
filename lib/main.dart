@@ -2297,12 +2297,13 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
       ])),
       const SizedBox(height: 18),
       Builder(builder: (assistantContext) => _standardCard(child: ListTile(
+        key: const ValueKey<String>('homeAiAssistantShortcut'),
         contentPadding: EdgeInsets.zero,
         leading: Icon(Icons.smart_toy_outlined, color: _accent, size: 27),
         title: Text(AppLanguage.text('AI Assistant'), style: const TextStyle(fontWeight: FontWeight.w700)),
         subtitle: Text(AppLanguage.text('Get help with storage, files, Vault and app features'), style: const TextStyle(fontSize: 11)),
         trailing: const Icon(Icons.chevron_right_rounded),
-        onTap: () => Navigator.of(assistantContext).push(MaterialPageRoute<void>(
+        onTap: () => Navigator.of(assistantContext, rootNavigator: true).push(MaterialPageRoute<void>(
           builder: (_) => AquaAiAssistantPage(accent: _accent),
         )),
       ))),
