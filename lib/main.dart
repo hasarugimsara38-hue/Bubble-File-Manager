@@ -2428,7 +2428,7 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
     return ListView(
       padding: const EdgeInsets.fromLTRB(19, 10, 19, 22),
       children: [
-        Text('Recycle Bin', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: foreground)),
+        Text(AppLanguage.text('Recycle Bin'), style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: foreground)),
         const SizedBox(height: 8),
         Text(AppLanguage.text('Items stay here for 30 days. Choosing Delete again starts a separate 2-hour recovery period.'),
           style: TextStyle(fontSize: 12, color: Colors.white60, height: 1.4)),
@@ -2445,10 +2445,10 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
               style: TextStyle(fontSize: 11, color: _accent)),
             const SizedBox(height: 8),
             Row(children: [
-              TextButton(onPressed: () => _restoreRecycleRecord(record), child: const Text('Restore')),
+              TextButton(onPressed: () => _restoreRecycleRecord(record), child: Text(AppLanguage.text('Restore'))),
               const Spacer(),
               if (record['stage'] != 'shred')
-                TextButton(onPressed: () => _deleteAgainForTwoHours(record), child: const Text('Delete again')),
+                TextButton(onPressed: () => _deleteAgainForTwoHours(record), child: Text(AppLanguage.text('Delete again'))),
             ]),
           ])),
         )),
@@ -2456,11 +2456,43 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
     );
   }
 
+  Future<void> _showLanguageDialog() async {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(AppLanguage.text('Choose your language')),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          ListTile(
+            leading: const Text('සි'),
+            title: const Text('සිංහල'),
+            trailing: AppLanguage.isSinhala ? Icon(Icons.check_circle, color: _accent) : null,
+            onTap: () { Navigator.pop(dialogContext); _selectLanguage('si'); },
+          ),
+          ListTile(
+            leading: const Text('En'),
+            title: const Text('English'),
+            trailing: !AppLanguage.isSinhala ? Icon(Icons.check_circle, color: _accent) : null,
+            onTap: () { Navigator.pop(dialogContext); _selectLanguage('en'); },
+          ),
+        ]),
+      ),
+    );
+  }
+
   Widget _settings(Color foreground) => ListView(
     padding: const EdgeInsets.fromLTRB(19, 10, 19, 22),
     children: [
       Text('Settings', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: foreground)),
-      const SizedBox(height: 17),
+      const SizedBox(height: 8),
+      _glass(child: ListTile(
+        contentPadding: EdgeInsets.zero,
+        leading: const Icon(Icons.translate_rounded),
+        title: Text(AppLanguage.text('Language')),
+        subtitle: Text(AppLanguage.isSinhala ? 'සිංහල' : 'English'),
+        trailing: const Icon(Icons.chevron_right_rounded),
+        onTap: _showLanguageDialog,
+      )),
+      const SizedBox(height: 10),
       _glass(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(AppLanguage.text('ACCENT COLOR'), style: const TextStyle(fontSize: 10, letterSpacing: 1.8, color: Colors.white60)),
         const SizedBox(height: 16),
@@ -2483,12 +2515,12 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
         (v) => setState(() => _animations = v)),
       _switchTile(AppLanguage.text('Water'), AppLanguage.text('Show or hide the liquid layer inside every glass card'), _waterEnabled,
         (v) => setState(() => _waterEnabled = v)),
-      _switchTile('Performance mode', 'Use fewer bubbles and less motion work', _performance,
+      _switchTile(AppLanguage.text('Performance mode'), AppLanguage.text('Use fewer bubbles and less motion work'), _performance,
         (v) => setState(() => _performance = v)),
       const SizedBox(height: 10),
       _glass(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [
-          const Expanded(child: Text('BUBBLE MOVEMENT SPEED',
+          Expanded(child: Text(AppLanguage.text('BUBBLE MOVEMENT SPEED'),
             style: TextStyle(fontSize: 10, letterSpacing: 1.5, color: Colors.white60))),
           Text('${_bubbleSpeed.toStringAsFixed(1)}×',
             style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: _accent)),
@@ -2501,12 +2533,12 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
           activeColor: _accent,
           onChanged: (value) => setState(() => _bubbleSpeed = value),
         ),
-        const Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          Text('0.1×  Very slow', style: TextStyle(fontSize: 10, color: Colors.white54)),
-          Text('3.0×  Very fast', style: TextStyle(fontSize: 10, color: Colors.white54)),
+        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+          Text(AppLanguage.text('0.1×  Very slow'), style: const TextStyle(fontSize: 10, color: Colors.white54)),
+          Text(AppLanguage.text('3.0×  Very fast'), style: const TextStyle(fontSize: 10, color: Colors.white54)),
         ]),
       ])),
-      _switchTile('Light appearance', 'Switch the interface brightness', _light,
+      _switchTile(AppLanguage.text('Light appearance'), AppLanguage.text('Switch the interface brightness'), _light,
         (v) => setState(() => _light = v)),
       const SizedBox(height: 12),
       _glass(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
