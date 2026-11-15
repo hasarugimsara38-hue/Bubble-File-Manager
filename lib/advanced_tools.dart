@@ -105,7 +105,7 @@ class _AquaAdvancedToolsState extends State<AquaAdvancedTools> {
           TextField(controller: pinController, obscureText: true, keyboardType: TextInputType.visiblePassword,
             decoration: InputDecoration(labelText: AppLanguage.text('Password (at least 6 characters)'))),
           if (storedHash == null) ...[
-            TextField(controller: confirmController, obscureText: true, keyboardType: TextInputType.number,
+            TextField(controller: confirmController, obscureText: true, keyboardType: TextInputType.visiblePassword,
               decoration: InputDecoration(labelText: AppLanguage.text('Confirm password'))),
             TextField(controller: recoveryQuestionController,
               decoration: InputDecoration(labelText: AppLanguage.text('Your recovery question'))),
@@ -332,9 +332,9 @@ class _AquaAdvancedToolsState extends State<AquaAdvancedTools> {
       builder: (dialogContext) => AlertDialog(
         title: Text(AppLanguage.text('Change Vault password')),
         content: Column(mainAxisSize: MainAxisSize.min, children: [
-          TextField(controller: newPinController, obscureText: true, keyboardType: TextInputType.number,
+          TextField(controller: newPinController, obscureText: true, keyboardType: TextInputType.visiblePassword,
             decoration: InputDecoration(labelText: AppLanguage.text('New password (at least 6 characters)'))),
-          TextField(controller: confirmController, obscureText: true, keyboardType: TextInputType.number,
+          TextField(controller: confirmController, obscureText: true, keyboardType: TextInputType.visiblePassword,
             decoration: InputDecoration(labelText: AppLanguage.text('Confirm new password'))),
         ]),
         actions: [
@@ -589,7 +589,7 @@ class _AquaAdvancedToolsState extends State<AquaAdvancedTools> {
           child: Column(children: [
             const Padding(
               padding: EdgeInsets.all(14),
-              child: Text('Photo locations', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              child: Text(AppLanguage.text('Photo locations'), style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             ),
             Expanded(child: FlutterMap(
               options: MapOptions(
@@ -611,7 +611,7 @@ class _AquaAdvancedToolsState extends State<AquaAdvancedTools> {
             )),
             const Padding(
               padding: EdgeInsets.all(8),
-              child: Text('Map data © OpenStreetMap contributors',
+              child: Text(AppLanguage.text('Map data © OpenStreetMap contributors'),
                 style: TextStyle(fontSize: 10, color: Colors.white60)),
             ),
           ]),
