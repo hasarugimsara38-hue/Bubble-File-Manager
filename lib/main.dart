@@ -346,6 +346,20 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
   final AudioPlayer _mediaAudioPlayer = AudioPlayer();
   late final AnimationController _cardWaterMotion;
 
+  String get _displayStorageMessage {
+    if (!AppLanguage.isSinhala) return _storageMessage;
+    if (_storageMessage.startsWith('Could not request storage access')) {
+      return 'ගබඩා ප්‍රවේශය ඉල්ලීම අසාර්ථක විය. නැවත උත්සාහ කරන්න.';
+    }
+    if (_storageMessage.startsWith('Could not re-check storage access')) {
+      return 'ගබඩා අවසරය නැවත පරීක්ෂා කළ නොහැකි විය.';
+    }
+    if (_storageMessage.startsWith('Cannot open this folder')) {
+      return 'මෙම ෆෝල්ඩරය විවෘත කළ නොහැක.';
+    }
+    return AppLanguage.text(_storageMessage);
+  }
+
   Color get _accent => aquaAccents[_theme];
 
   bool _showSplash = false;
@@ -2558,7 +2572,7 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
       _glass(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(AppLanguage.text('STORAGE ACCESS'), style: const TextStyle(fontSize: 10, letterSpacing: 1.8, color: Colors.white60)),
         const SizedBox(height: 8),
-        Text(AppLanguage.text(_storageMessage), style: const TextStyle(fontSize: 12, color: Colors.white70)),
+        Text(_displayStorageMessage, style: const TextStyle(fontSize: 12, color: Colors.white70)),
         Align(alignment: Alignment.centerRight,
           child: TextButton(onPressed: _requestStorage, child: Text(AppLanguage.text('Check permission')))),
       ])),
