@@ -193,8 +193,10 @@ class _FaceAlbumsPageState extends State<FaceAlbumsPage> {
         setState(() => _status = 'Preparing offline face model…');
       }
       detector = await face_ml.FaceDetector.create(
+        // Do not discard small faces in group photos. The package default
+        // (0.0) keeps the full detector recall; match thresholds below handle
+        // similarity confidence separately.
         model: face_ml.FaceDetectionModel.backCamera,
-        minFaceSize: 0.04,
       );
       final clusters = <_PersonCluster>[];
 
