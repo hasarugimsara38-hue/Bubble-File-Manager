@@ -8,7 +8,7 @@ class VaultCredentials {
   VaultCredentials._();
 
   static String normalizeRecoveryAnswer(String value) =>
-      value.trim().toLowerCase().replaceAll(RegExp(r'\\s+'), ' ');
+      value.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
 
   static String digest(String salt, String value) =>
       sha256.convert(utf8.encode('$salt:$value')).toString();
