@@ -1180,7 +1180,7 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
           content: SizedBox(
             width: double.maxFinite,
             child: groups.isEmpty
-              ? Text('No byte-identical duplicate files found in the scanned area. Scanned up to $visited files.')
+              ? Text(AppLanguage.isSinhala ? 'පරීක්ෂා කළ ස්ථානවල එකම ගොනු හමු නොවීය. ගොනු $visitedක් පරීක්ෂා කරන ලදී.' : 'No byte-identical duplicate files found in the scanned area. Scanned up to $visited files.')
               : ListView(
                   shrinkWrap: true,
                   children: groups.map((group) => Padding(
@@ -1188,7 +1188,7 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('${group.length} identical copies',
+                        Text(AppLanguage.isSinhala ? 'එකම පිටපත් ${group.length}ක්' : '${group.length} identical copies',
                           style: const TextStyle(fontWeight: FontWeight.bold)),
                         const SizedBox(height: 5),
                         ...group.map((file) => Text(file.path,
@@ -1396,7 +1396,7 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
           const SizedBox(height: 12),
           Text(entity.path, style: const TextStyle(color: Colors.white60)),
           const SizedBox(height: 8),
-          Text('Size: ' + size),
+          Text((AppLanguage.isSinhala ? 'ප්‍රමාණය: ' : 'Size: ') + size),
           const SizedBox(height: 18),
         ]),
       ),
@@ -1422,7 +1422,7 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
     final pin = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Unlock ${_nameOf(directory)}'),
+        title: Text((AppLanguage.isSinhala ? 'විවෘත කරන්න: ' : 'Unlock ') + _nameOf(directory)),
         content: TextField(controller: controller, obscureText: true,
           keyboardType: TextInputType.number, decoration: InputDecoration(labelText: AppLanguage.text('Folder PIN'))),
         actions: [
@@ -1445,7 +1445,7 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
       final pin = await showDialog<String>(
         context: context,
         builder: (context) => AlertDialog(
-          title: Text('Remove PIN • ${_nameOf(directory)}'),
+          title: Text((AppLanguage.isSinhala ? 'මුරපදය ඉවත් කරන්න • ' : 'Remove password • ') + _nameOf(directory)),
           content: TextField(controller: controller, obscureText: true, keyboardType: TextInputType.number,
             decoration: InputDecoration(labelText: AppLanguage.text('Current PIN'))),
           actions: [
@@ -1467,7 +1467,7 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
     final pin = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Protect ${_nameOf(directory)}'),
+        title: Text((AppLanguage.isSinhala ? 'ආරක්ෂා කරන්න: ' : 'Protect ') + _nameOf(directory)),
         content: Column(mainAxisSize: MainAxisSize.min, children: [
           TextField(controller: first, obscureText: true, keyboardType: TextInputType.number,
             decoration: InputDecoration(labelText: AppLanguage.text('Create PIN (6+ digits)'))),
@@ -2346,7 +2346,7 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
                 ],
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                  child: Text('Sort: $_sortMode ${_sortDescending ? '↓' : '↑'}', style: TextStyle(fontSize: 10, color: _accent)),
+                  child: Text((AppLanguage.isSinhala ? 'වර්ගය: ' : 'Sort: ') + '$_sortMode ${_sortDescending ? '↓' : '↑'}', style: TextStyle(fontSize: 10, color: _accent)),
                 ),
               ),
             ]),
@@ -2424,7 +2424,7 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
                         if (item is Directory) PopupMenuItem(value: 'folder_pin', child: Text(AppLanguage.text('Set / remove in-app Folder PIN'))),
                         PopupMenuItem(value: 'copy', child: Text(AppLanguage.text('Copy'))),
                         PopupMenuItem(value: 'cut', child: Text(AppLanguage.text('Cut'))),
-                        PopupMenuItem(value: 'rename', child: Text('Rename')),
+                        PopupMenuItem(value: 'rename', child: Text(AppLanguage.text('Rename'))),
                         PopupMenuItem(value: 'delete', child: Text(AppLanguage.text('Move to Recycle Bin'))),
                         PopupMenuItem(value: 'share', child: Text(AppLanguage.text('Share'))),
                         PopupMenuItem(value: 'details', child: Text(AppLanguage.text('Properties'))),
@@ -2496,7 +2496,7 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
   Widget _settings(Color foreground) => ListView(
     padding: const EdgeInsets.fromLTRB(19, 10, 19, 22),
     children: [
-      Text('Settings', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: foreground)),
+      Text(AppLanguage.text('Settings'), style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800, color: foreground)),
       const SizedBox(height: 8),
       _glass(child: ListTile(
         contentPadding: EdgeInsets.zero,
@@ -2558,17 +2558,15 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
       _glass(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Text(AppLanguage.text('STORAGE ACCESS'), style: const TextStyle(fontSize: 10, letterSpacing: 1.8, color: Colors.white60)),
         const SizedBox(height: 8),
-        Text(_storageMessage, style: const TextStyle(fontSize: 12, color: Colors.white70)),
+        Text(AppLanguage.text(_storageMessage), style: const TextStyle(fontSize: 12, color: Colors.white70)),
         Align(alignment: Alignment.centerRight,
           child: TextButton(onPressed: _requestStorage, child: Text(AppLanguage.text('Check permission')))),
       ])),
       const SizedBox(height: 12),
-      _glass(child: const Text(
-        'Bubble File Manager • Development build\n'
-        'Includes storage browsing, file operations, bubble physics, two-stage Recycle Bin, hidden files and SHA-256 duplicate scanning. '
-        'Advanced Tools add encrypted Vault, ZIP, selected-photo GPS maps, removable-storage file import and cleanup suggestions. '
-        'Face Similarity Albums use an on-device face detection and embedding model to group visually similar faces; review matches because errors are possible.',
-        style: TextStyle(fontSize: 11, color: Colors.white60, height: 1.55))),
+      _glass(child: Text(AppLanguage.isSinhala
+        ? 'Bubble File Manager • සංවර්ධන සංස්කරණය\nගබඩා ගවේෂණය, ගොනු ක්‍රියාකාරකම්, බුබුළු චලනය, අදියර දෙකක ප්‍රතිචක්‍රීකරණ බඳුන සහ අනුපිටපත් ගොනු සෙවීම ඇතුළත් වේ. උසස් මෙවලම් මඟින් සංකේතනය කළ Vault, ZIP, GPS ස්ථාන සිතියම්, බාහිර ගබඩා ආයාතය සහ Smart Cleanup ලබාදේ. මුහුණු ඇල්බම උපාංගය තුළම සමාන මුහුණු කාණ්ඩ කරයි; ගැළපීම් වැරදි විය හැකි බැවින් පරීක්ෂා කරන්න.'
+        : 'Bubble File Manager • Development build\nIncludes storage browsing, file operations, bubble physics, two-stage Recycle Bin, hidden files and SHA-256 duplicate scanning. Advanced Tools add encrypted Vault, ZIP, selected-photo GPS maps, removable-storage file import and cleanup suggestions. Face Similarity Albums use an on-device face detection and embedding model to group visually similar faces; review matches because errors are possible.',
+        style: const TextStyle(fontSize: 11, color: Colors.white60, height: 1.55))),
     ],
   );
 
