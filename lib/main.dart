@@ -1928,10 +1928,43 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
                     return Column(children: [
                       Expanded(
                         child: Center(
-                          child: AspectRatio(
-                            aspectRatio: value.aspectRatio > 0 ? value.aspectRatio : 16 / 9,
-                            child: VideoPlayer(controller),
-                          ),
+                          child: value.hasError
+                              ? Padding(
+                                  padding: const EdgeInsets.all(24),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const Icon(Icons.video_file_outlined,
+                                        color: Colors.white70, size: 52),
+                                      const SizedBox(height: 12),
+                                      const Text(
+                                        'This format could not be decoded by the built-in player.',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(color: Colors.white70),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      FilledButton.icon(
+                                        onPressed: () async {
+                                          Navigator.pop(dialogContext);
+                                          await _openMediaFallback(
+                                            file,
+                                            mediaType: 'video',
+                                            error: StateError(
+                                              value.errorDescription ??
+                                                  'Unsupported video codec or container',
+                                            ),
+                                          );
+                                        },
+                                        icon: const Icon(Icons.open_in_new),
+                                        label: const Text('Try another installed player'),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                              : AspectRatio(
+                                  aspectRatio: value.aspectRatio > 0 ? value.aspectRatio : 16 / 9,
+                                  child: VideoPlayer(controller),
+                                ),
                         ),
                       ),
                       Padding(
