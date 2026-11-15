@@ -58,8 +58,52 @@ class _AquaAdvancedToolsState extends State<AquaAdvancedTools> {
   Map<String, dynamic>? _deviceDiagnostics;
   String _performanceSummary = '';
 
+  String _localizedStatus(String value) {
+    if (!AppLanguage.isSinhala) return value;
+    const prefixes = <String, String>{
+      'Vault encryption failed: ': 'Vault සංකේතනය අසාර්ථකයි: ',
+      'Vault decryption failed: ': 'Vault විකේතනය අසාර්ථකයි: ',
+      'ZIP creation failed: ': 'ZIP නිර්මාණය අසාර්ථකයි: ',
+      'ZIP extraction failed: ': 'ZIP විහිදුවීම අසාර්ථකයි: ',
+      'Device diagnostics unavailable: ': 'උපාංග පරීක්ෂණ තොරතුරු ලබාගත නොහැක: ',
+      'Face scan could not finish: ': 'මුහුණු පරීක්ෂාව අවසන් කළ නොහැකි විය: ',
+    };
+    for (final entry in prefixes.entries) {
+      if (value.startsWith(entry.key)) return entry.value + value.substring(entry.key.length);
+    }
+    if (value.startsWith('Smart Cleanup scanned up to ')) {
+      final match = RegExp(r'Smart Cleanup scanned up to (\d+) files.*found (\d+) large or older files').firstMatch(value);
+      if (match != null) {
+        return 'Smart Cleanup මඟින් ගොනු ${match.group(1)}ක් පරීක්ෂා කර විශාල හෝ පැරණි ගොනු ${match.group(2)}ක් සොයාගත්තා. කිසිවක් මකා නැත.';
+      }
+    }
+    if (value.startsWith('Imported ')) {
+      final match = RegExp(r'Imported (\d+) file\(s\)').firstMatch(value);
+      if (match != null) return 'ගොනු ${match.group(1)}ක් Android ගොනු තේරීමේ මෙවලමෙන් ආයාත කළා.';
+    }
+    const messages = <String, String>{
+      'Create a Vault PIN first.': 'පළමුව Vault මුරපදයක් සාදන්න.',
+      'Use a password of at least 6 characters, confirm it, and enter your own recovery question and answer.': 'අවම වශයෙන් අක්ෂර 6ක මුරපදයක් ඇතුළත් කර තහවුරු කරන්න. ඔබ කැමති ප්‍රතිසාධන ප්‍රශ්නය සහ පිළිතුරද සකසන්න.',
+      'Encrypted Vault created. Keep your password and recovery answer private.': 'සංකේතනය කළ Vault එක සාදා ඇත. ඔබගේ මුරපදය සහ ප්‍රතිසාධන පිළිතුර රහසිගතව තබාගන්න.',
+      'Incorrect password.': 'මුරපදය වැරදියි.',
+      'A recovery question and answer are required to finish Vault sign-in.': 'Vault එකට ඇතුළුවීම සම්පූර්ණ කිරීමට ප්‍රතිසාධන ප්‍රශ්නයක් සහ පිළිතුරක් අවශ්‍යයි.',
+      'Password must be at least 6 characters and both entries must match.': 'මුරපදය අවම වශයෙන් අක්ෂර 6ක් විය යුතු අතර ඇතුළත් කිරීම් දෙක ගැළපිය යුතුය.',
+      'Vault password changed successfully.': 'Vault මුරපදය සාර්ථකව වෙනස් කරන ලදී.',
+      'File encrypted and added to Vault.': 'ගොනුව සංකේතනය කර Vault එකට එක් කළා.',
+      'Decrypted file exported to the selected folder.': 'විකේතනය කළ ගොනුව තෝරාගත් ෆෝල්ඩරයට අපනයනය කළා.',
+      'ZIP created in the current Aqua folder. Files over 100 MB were skipped for low-memory safety.': 'වත්මන් Aqua ෆෝල්ඩරයේ ZIP ගොනුව සාදා ඇත. අඩු මතක භාවිතය සඳහා 100 MB ඉක්මවූ ගොනු මඟහැරුණි.',
+      'ZIP extraction completed in the selected folder.': 'තෝරාගත් ෆෝල්ඩරයට ZIP ගොනුව විහිදුවීම අවසන්.',
+      'Checking Android storage access, removable volumes and runtime performance…': 'Android ගබඩා ප්‍රවේශය, ඉවත් කළ හැකි ගබඩා සහ ක්‍රියාකාරිත්වය පරීක්ෂා කරමින්…',
+      'Device diagnostics completed. Physical USB/SD access still needs a real-device check.': 'උපාංග පරීක්ෂාව අවසන්. USB/SD ප්‍රවේශය සැබෑ දුරකථනයක පරීක්ෂා කළ යුතුයි.',
+      'Scan your accessible photo folders to create private, on-device people albums.': 'ඔබගේ ප්‍රවේශ විය හැකි ඡායාරූප ෆෝල්ඩර පරීක්ෂා කර උපාංගය තුළම පුද්ගල ඇල්බම සාදන්න.',
+      'Checking photo access…': 'ඡායාරූප ප්‍රවේශය පරීක්ෂා කරමින්…',
+      'Preparing offline face model…': 'අන්තර්ජාලය නොමැති මුහුණු ආකෘතිය සූදානම් කරමින්…',
+    };
+    return messages[value] ?? AppLanguage.text(value);
+  }
+
   void _say(String value) {
-    if (mounted) setState(() => _status = AppLanguage.text(value));
+    if (mounted) setState(() => _status = _localizedStatus(value));
   }
 
   Future<Directory> _vaultDirectory() async {
