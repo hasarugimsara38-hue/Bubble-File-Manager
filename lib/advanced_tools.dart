@@ -5,6 +5,7 @@ import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
 import 'face_albums.dart';
+import 'app_language.dart';
 import 'ai_assistant.dart';
 import 'location_albums.dart';
 import 'package:cryptography/cryptography.dart';
@@ -15,7 +16,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:local_auth/local_auth.dart';
 import 'package:path_provider/path_provider.dart';
 
 class AquaAdvancedTools extends StatefulWidget {
@@ -50,7 +50,6 @@ class _AquaAdvancedToolsState extends State<AquaAdvancedTools> {
       });
     }
   }
-  final _auth = LocalAuthentication();
   bool _busy = false;
   String _status = 'Choose a tool to begin.';
   List<File> _vaultFiles = <File>[];
@@ -101,26 +100,26 @@ class _AquaAdvancedToolsState extends State<AquaAdvancedTools> {
     final result = await showDialog<String>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: Text(storedHash == null ? 'Create Vault PIN' : 'Unlock Vault'),
+        title: Text(AppLanguage.text(storedHash == null ? 'Create Vault PIN' : 'Unlock Vault')),
         content: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
           TextField(controller: pinController, obscureText: true, keyboardType: TextInputType.number,
-            decoration: const InputDecoration(labelText: 'PIN (at least 6 digits)')),
+            decoration: InputDecoration(labelText: AppLanguage.text('Password (at least 6 digits)'))),
           if (storedHash == null) ...[
             TextField(controller: confirmController, obscureText: true, keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Confirm PIN')),
+              decoration: InputDecoration(labelText: AppLanguage.text('Confirm password'))),
             TextField(controller: recoveryQuestionController,
-              decoration: const InputDecoration(labelText: 'Your recovery question')),
+              decoration: InputDecoration(labelText: AppLanguage.text('Your recovery question'))),
             TextField(controller: recoveryAnswerController, obscureText: true,
-              decoration: const InputDecoration(labelText: 'Your answer')),
+              decoration: InputDecoration(labelText: AppLanguage.text('Your answer'))),
           ],
         ])),
         actions: [
           if (storedHash != null)
             TextButton(onPressed: () => Navigator.pop(dialogContext, 'recover'),
-              child: const Text('Forgot PIN?')),
-          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Cancel')),
+              child: Text(AppLanguage.text('Forgot password?'))),
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: Text(AppLanguage.text('Cancel'))),
           FilledButton(onPressed: () => Navigator.pop(dialogContext, 'pin'),
-            child: const Text('Continue')),
+            child: Text(AppLanguage.text('Continue'))),
         ],
       ),
     );
@@ -191,9 +190,9 @@ class _AquaAdvancedToolsState extends State<AquaAdvancedTools> {
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Set up PIN recovery'),
+        title: Text(AppLanguage.text('Set up PIN recovery')),
         content: Column(mainAxisSize: MainAxisSize.min, children: [
-          const Text('Create your own question and answer. Choose an answer that is private and difficult for others to guess.'),
+          Text(AppLanguage.text('Create your own question and answer. Choose an answer that is private and difficult for others to guess.')),
           TextField(controller: questionController,
             decoration: const InputDecoration(labelText: 'Your recovery question')),
           TextField(controller: answerController, obscureText: true,
@@ -201,7 +200,7 @@ class _AquaAdvancedToolsState extends State<AquaAdvancedTools> {
         ]),
         actions: [
           FilledButton(onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Save recovery answer')),
+            child: Text(AppLanguage.text('Save recovery answer'))),
         ],
       ),
     );
@@ -222,81 +221,125 @@ class _AquaAdvancedToolsState extends State<AquaAdvancedTools> {
 
   Future<bool> _recoverPin() async {
     final answerController = TextEditingController();
-    final newPinController = TextEditingController();
-    final confirmController = TextEditingController();
     final recoveryQuestion = await _secure.read(key: 'aqua_vault_recovery_question');
     final recoverySalt = await _secure.read(key: 'aqua_vault_recovery_salt');
     final recoveryHash = await _secure.read(key: 'aqua_vault_recovery_hash');
     if (recoveryQuestion == null || recoverySalt == null || recoveryHash == null) {
-      _say('Recovery is not configured on this Vault. Unlock with your PIN and set a recovery question first.');
+      _say(AppLanguage.text('Recovery is not configured. Unlock with your current password and set a recovery question first.'));
       answerController.dispose();
-      newPinController.dispose();
-      confirmController.dispose();
       return false;
     }
+
     final result = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Recover Vault PIN'),
-        content: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
+        title: Text(AppLanguage.text('Forgot password?')),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
           Text(recoveryQuestion),
-          TextField(controller: answerController, obscureText: true,
-            decoration: const InputDecoration(labelText: 'Your answer')),
-          TextField(controller: newPinController, obscureText: true, keyboardType: TextInputType.number,
-            decoration: const InputDecoration(labelText: 'New PIN (at least 6 digits)')),
-          TextField(controller: confirmController, obscureText: true, keyboardType: TextInputType.number,
-            decoration: const InputDecoration(labelText: 'Confirm new PIN')),
-        ])),
+          TextField(
+            controller: answerController,
+            obscureText: true,
+            textInputAction: TextInputAction.done,
+            decoration: InputDecoration(labelText: AppLanguage.text('Your answer')),
+          ),
+        ]),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Reset PIN')),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(AppLanguage.text('Cancel')),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(AppLanguage.text('Verify answer')),
+          ),
         ],
       ),
     );
+
     if (result != true) {
       answerController.dispose();
-      newPinController.dispose();
-      confirmController.dispose();
       return false;
     }
     final answerDigest = hashes.sha256.convert(
       utf8.encode('$recoverySalt:${_normaliseRecoveryAnswer(answerController.text)}'),
     ).toString();
-    final newPin = newPinController.text;
-    if (answerDigest != recoveryHash || newPin.length < 6 || newPin != confirmController.text) {
-      _say('Recovery answer or new PIN is invalid. Try again.');
-      answerController.dispose();
-      newPinController.dispose();
-      confirmController.dispose();
+    answerController.dispose();
+
+    if (answerDigest != recoveryHash) {
+      _say(AppLanguage.text('That recovery answer is incorrect.'));
       return false;
     }
-    final pinRecord = await _saltedDigest(newPin);
-    await _secure.write(key: 'aqua_vault_pin_salt', value: pinRecord.split(':').first);
-    await _secure.write(key: 'aqua_vault_pin_hash', value: pinRecord.split(':').last);
-    _say('PIN reset successfully. Your encrypted Vault files are unchanged.');
-    answerController.dispose();
-    newPinController.dispose();
-    confirmController.dispose();
+
+    _say(AppLanguage.text('Recovery answer accepted. Vault unlocked. You can change your password inside the Vault.'));
     return true;
   }
 
+  Future<void> _changeRecoveryDetails() async {
+    final questionController = TextEditingController(
+      text: await _secure.read(key: 'aqua_vault_recovery_question') ?? '',
+    );
+    final answerController = TextEditingController();
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(AppLanguage.text('Change recovery question / answer')),
+        content: Column(mainAxisSize: MainAxisSize.min, children: [
+          TextField(
+            controller: questionController,
+            textCapitalization: TextCapitalization.sentences,
+            decoration: InputDecoration(labelText: AppLanguage.text('Your recovery question')),
+          ),
+          TextField(
+            controller: answerController,
+            obscureText: true,
+            decoration: InputDecoration(labelText: AppLanguage.text('New recovery answer')),
+          ),
+        ]),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(AppLanguage.text('Cancel')),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(AppLanguage.text('Save recovery details')),
+          ),
+        ],
+      ),
+    );
+
+    final question = questionController.text.trim();
+    final answer = _normaliseRecoveryAnswer(answerController.text);
+    questionController.dispose();
+    answerController.dispose();
+    if (result != true) return;
+    if (question.length < 5 || answer.length < 2) {
+      _say(AppLanguage.text('Enter a recovery question of at least 5 characters and an answer of at least 2 characters.'));
+      return;
+    }
+    final record = await _saltedDigest(answer);
+    await _secure.write(key: 'aqua_vault_recovery_question', value: question);
+    await _secure.write(key: 'aqua_vault_recovery_salt', value: record.split(':').first);
+    await _secure.write(key: 'aqua_vault_recovery_hash', value: record.split(':').last);
+    _say(AppLanguage.text('Recovery question and answer updated.'));
+  }
+
   Future<void> _changePin() async {
-    if (!await _verifyPin()) return;
     final newPinController = TextEditingController();
     final confirmController = TextEditingController();
     final result = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Change Vault PIN'),
+        title: Text(AppLanguage.text('Change Vault password')),
         content: Column(mainAxisSize: MainAxisSize.min, children: [
           TextField(controller: newPinController, obscureText: true, keyboardType: TextInputType.number,
-            decoration: const InputDecoration(labelText: 'New PIN (at least 6 digits)')),
+            decoration: InputDecoration(labelText: AppLanguage.text('New password (at least 6 digits)'))),
           TextField(controller: confirmController, obscureText: true, keyboardType: TextInputType.number,
-            decoration: const InputDecoration(labelText: 'Confirm new PIN')),
+            decoration: InputDecoration(labelText: AppLanguage.text('Confirm new password'))),
         ]),
         actions: [
           TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: const Text('Save PIN')),
+          FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: Text(AppLanguage.text('Save password'))),
         ],
       ),
     );
@@ -316,31 +359,10 @@ class _AquaAdvancedToolsState extends State<AquaAdvancedTools> {
   }
 
   Future<bool> _unlockVault() async {
-    final hasPin = await _secure.read(key: 'aqua_vault_pin_hash') != null;
-    if (!hasPin) return _verifyPin(setup: true);
-    final useBiometric = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Unlock encrypted Vault'),
-        content: const Text('Use device authentication, or enter your Vault PIN.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Use PIN')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Fingerprint / device')),
-        ],
-      ),
-    );
-    if (useBiometric == true) {
-      try {
-        final available = await _auth.canCheckBiometrics || await _auth.isDeviceSupported();
-        if (available && await _auth.authenticate(
-          localizedReason: 'Authenticate to open your encrypted Aqua Vault',
-          options: const AuthenticationOptions(biometricOnly: false, stickyAuth: true),
-        )) return true;
-      } catch (_) {}
-      _say('Device authentication was unavailable or cancelled. Use your PIN.');
-      return false;
-    }
-    return _verifyPin();
+    final hasPassword = await _secure.read(key: 'aqua_vault_pin_hash') != null;
+    // The Vault always requires its own password. Device biometrics must not
+    // bypass the password prompt or the configured recovery flow.
+    return _verifyPin(setup: !hasPassword);
   }
 
   Future<void> _openVault() async {
@@ -354,19 +376,25 @@ class _AquaAdvancedToolsState extends State<AquaAdvancedTools> {
         padding: const EdgeInsets.all(18),
         child: SizedBox(height: MediaQuery.of(context).size.height * .65,
           child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-            const Text('Encrypted Secret Vault', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            Text(AppLanguage.text('Encrypted Secret Vault'), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            const Text('Files are stored encrypted with AES-256-GCM.', style: TextStyle(color: Colors.white70)),
+            Text(AppLanguage.text('Files are stored encrypted with AES-256-GCM.'), style: const TextStyle(color: Colors.white70)),
             const SizedBox(height: 12),
             FilledButton.icon(onPressed: () async { Navigator.pop(context); await _addToVault(alreadyUnlocked: true); },
-              icon: const Icon(Icons.add), label: const Text('Encrypt a file into Vault')),
+              icon: const Icon(Icons.add), label: Text(AppLanguage.text('Encrypt a file into Vault'))),
             OutlinedButton.icon(
               onPressed: _busy ? null : _changePin,
               icon: const Icon(Icons.password),
-              label: const Text('Change Vault PIN'),
+              label: Text(AppLanguage.text('Change Vault password')),
+            ),
+            const SizedBox(height: 6),
+            OutlinedButton.icon(
+              onPressed: _busy ? null : _changeRecoveryDetails,
+              icon: const Icon(Icons.question_answer_outlined),
+              label: Text(AppLanguage.text('Change recovery question / answer')),
             ),
             Expanded(child: _vaultFiles.isEmpty
-              ? const Center(child: Text('Vault is empty.'))
+              ? Center(child: Text(AppLanguage.text('Vault is empty.')))
               : ListView(children: _vaultFiles.map((file) => ListTile(
                   leading: const Icon(Icons.lock, color: Colors.cyanAccent),
                   title: Text(file.uri.pathSegments.last, maxLines: 1, overflow: TextOverflow.ellipsis),
@@ -375,7 +403,7 @@ class _AquaAdvancedToolsState extends State<AquaAdvancedTools> {
                     await _exportFromVault(file, alreadyUnlocked: true);
                   }),
                 )).toList())),
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Close')),
+            TextButton(onPressed: () => Navigator.pop(context), child: Text(AppLanguage.text('Close'))),
           ])),
       )),
     );
