@@ -3,23 +3,24 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:bubble_file_manager/main.dart';
 import 'package:bubble_file_manager/ai_assistant.dart';
 import 'package:bubble_file_manager/home_companions.dart';
-import 'package:bubble_file_manager/app_language.dart';
 
 void main() {
   testWidgets('Bubble File Manager shows splash and opens the Assistant from Home', (tester) async {
     await tester.pumpWidget(const AquaApp());
 
+    await tester.pump();
+    expect(find.text('Choose your language'), findsOneWidget);
+    expect(find.text('සිංහල'), findsOneWidget);
+    expect(find.text('English'), findsOneWidget);
+
+    await tester.tap(find.text('English'));
+    await tester.pump();
     expect(find.text('BUBBLE'), findsOneWidget);
     expect(find.text('FILE MANAGER'), findsOneWidget);
     expect(find.text('Safety and Relax File Management System'), findsOneWidget);
     expect(find.text('Created by H.G.Aluthge'), findsOneWidget);
 
     await tester.pump(const Duration(milliseconds: 3300));
-    await tester.pump();
-    expect(find.text('Choose your language'), findsOneWidget);
-    expect(find.text('සිංහල'), findsOneWidget);
-    expect(find.text('English'), findsOneWidget);
-    await tester.tap(find.text('English'));
     await tester.pump();
     await tester.pump(const Duration(seconds: 2));
 
