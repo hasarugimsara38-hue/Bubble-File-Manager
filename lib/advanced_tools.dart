@@ -588,7 +588,7 @@ class _AquaAdvancedToolsState extends State<AquaAdvancedTools> {
         child: SizedBox(
           height: MediaQuery.of(context).size.height * .72,
           child: Column(children: [
-            const Padding(
+            Padding(
               padding: EdgeInsets.all(14),
               child: Text(AppLanguage.text('Photo locations'), style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             ),
@@ -610,7 +610,7 @@ class _AquaAdvancedToolsState extends State<AquaAdvancedTools> {
                 )).toList()),
               ],
             )),
-            const Padding(
+            Padding(
               padding: EdgeInsets.all(8),
               child: Text(AppLanguage.text('Map data © OpenStreetMap contributors'),
                 style: TextStyle(fontSize: 10, color: Colors.white60)),
