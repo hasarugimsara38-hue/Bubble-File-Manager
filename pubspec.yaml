@@ -37,3 +37,6 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/characters/hasaru_1080.png
+    - assets/characters/yunadie_1080.png
