@@ -1176,7 +1176,7 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
         context: context,
         builder: (dialogContext) => AlertDialog(
           backgroundColor: const Color(0xE610303D),
-          title: const Text('Identical files'),
+          title: Text(AppLanguage.text('Identical files')),
           content: SizedBox(
             width: double.maxFinite,
             child: groups.isEmpty
@@ -1198,7 +1198,7 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
                   )).toList(),
                 ),
           ),
-          actions: [TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Close'))],
+          actions: [TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text(AppLanguage.text('Close')))],
         ),
       );
     } catch (e) {
@@ -1320,13 +1320,13 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xE610303D),
-        title: const Text('New folder'),
+        title: Text(AppLanguage.text('New folder')),
         content: TextField(controller: controller, autofocus: true,
-          decoration: const InputDecoration(hintText: 'Folder name')),
+          decoration: InputDecoration(hintText: AppLanguage.text('Folder name'))),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text(AppLanguage.text('Cancel'))),
           FilledButton(onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: const Text('Create')),
+            child: const Text(AppLanguage.text('Create'))),
         ],
       ),
     );
@@ -1345,12 +1345,12 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xE610303D),
-        title: const Text('Rename'),
+        title: Text(AppLanguage.text('Rename')),
         content: TextField(controller: controller, autofocus: true),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text(AppLanguage.text('Cancel'))),
           FilledButton(onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: const Text('Save')),
+            child: const Text(AppLanguage.text('Save'))),
         ],
       ),
     );
@@ -1424,10 +1424,10 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
       builder: (context) => AlertDialog(
         title: Text('Unlock ${_nameOf(directory)}'),
         content: TextField(controller: controller, obscureText: true,
-          keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Folder PIN')),
+          keyboardType: TextInputType.number, decoration: InputDecoration(labelText: AppLanguage.text('Folder PIN'))),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(context, controller.text), child: const Text('Unlock')),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text(AppLanguage.text('Cancel'))),
+          FilledButton(onPressed: () => Navigator.pop(context, controller.text), child: const Text(AppLanguage.text('Unlock'))),
         ],
       ),
     );
@@ -1447,10 +1447,10 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
         builder: (context) => AlertDialog(
           title: Text('Remove PIN • ${_nameOf(directory)}'),
           content: TextField(controller: controller, obscureText: true, keyboardType: TextInputType.number,
-            decoration: const InputDecoration(labelText: 'Current PIN')),
+            decoration: InputDecoration(labelText: AppLanguage.text('Current PIN'))),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-            FilledButton(onPressed: () => Navigator.pop(context, controller.text), child: const Text('Remove lock')),
+            TextButton(onPressed: () => Navigator.pop(context), child: const Text(AppLanguage.text('Cancel'))),
+            FilledButton(onPressed: () => Navigator.pop(context, controller.text), child: const Text(AppLanguage.text('Remove lock'))),
           ],
         ),
       );
@@ -1470,13 +1470,13 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
         title: Text('Protect ${_nameOf(directory)}'),
         content: Column(mainAxisSize: MainAxisSize.min, children: [
           TextField(controller: first, obscureText: true, keyboardType: TextInputType.number,
-            decoration: const InputDecoration(labelText: 'Create PIN (6+ digits)')),
+            decoration: InputDecoration(labelText: AppLanguage.text('Create PIN (6+ digits)'))),
           TextField(controller: second, obscureText: true, keyboardType: TextInputType.number,
-            decoration: const InputDecoration(labelText: 'Confirm PIN')),
+            decoration: InputDecoration(labelText: AppLanguage.text('Confirm PIN'))),
         ]),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(context, first.text), child: const Text('Protect')),
+          TextButton(onPressed: () => Navigator.pop(context), child: const Text(AppLanguage.text('Cancel'))),
+          FilledButton(onPressed: () => Navigator.pop(context, first.text), child: const Text(AppLanguage.text('Protect'))),
         ],
       ),
     );
@@ -1559,7 +1559,7 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
             ),
             actions: [
               IconButton(
-                tooltip: 'Close image',
+                tooltip: AppLanguage.text('Close image'),
                 icon: const Icon(Icons.close),
                 onPressed: () => Navigator.of(dialogContext).pop(),
               ),
@@ -1664,7 +1664,7 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
                     ),
                     Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                       IconButton(
-                        tooltip: 'Back 10 seconds',
+                        tooltip: AppLanguage.text('Back 10 seconds'),
                         onPressed: () async {
                           final position = await _mediaAudioPlayer.getCurrentPosition() ?? Duration.zero;
                           final target = position - const Duration(seconds: 10);
@@ -1684,7 +1684,7 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
                         icon: Icon(playing ? Icons.pause_circle : Icons.play_circle, color: _accent),
                       ),
                       IconButton(
-                        tooltip: 'Forward 10 seconds',
+                        tooltip: AppLanguage.text('Forward 10 seconds'),
                         onPressed: () async {
                           final position = await _mediaAudioPlayer.getCurrentPosition() ?? Duration.zero;
                           final duration = await _mediaAudioPlayer.getDuration() ?? position;
@@ -1694,7 +1694,7 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
                         icon: const Icon(Icons.forward_10_rounded),
                       ),
                       IconButton(
-                        tooltip: 'Stop playback',
+                        tooltip: AppLanguage.text('Stop playback'),
                         onPressed: () async {
                           await _mediaAudioPlayer.stop();
                           if (sheetContext.mounted) Navigator.pop(sheetContext);
@@ -1760,7 +1760,7 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
                 title: Text(_nameOf(file), maxLines: 1, overflow: TextOverflow.ellipsis),
                 actions: [
                   IconButton(
-                    tooltip: 'Close video',
+                    tooltip: AppLanguage.text('Close video'),
                     onPressed: () => Navigator.pop(dialogContext),
                     icon: const Icon(Icons.close),
                   ),
@@ -1799,7 +1799,7 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
                           ]),
                           Row(mainAxisAlignment: MainAxisAlignment.center, children: [
                             IconButton(
-                              tooltip: 'Back 10 seconds',
+                              tooltip: AppLanguage.text('Back 10 seconds'),
                               onPressed: () {
                                 final target = value.position - const Duration(seconds: 10);
                                 unawaited(controller.seekTo(target.isNegative ? Duration.zero : target));
@@ -1813,7 +1813,7 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
                                 color: _accent),
                             ),
                             IconButton(
-                              tooltip: 'Forward 10 seconds',
+                              tooltip: AppLanguage.text('Forward 10 seconds'),
                               onPressed: () {
                                 final target = value.position + const Duration(seconds: 10);
                                 unawaited(controller.seekTo(target > value.duration ? value.duration : target));
@@ -2062,7 +2062,7 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
           const SizedBox(width: 10),
           Expanded(child: Text(AppLanguage.text('Internal storage'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700))),
           IconButton(
-            tooltip: 'Refresh storage',
+            tooltip: AppLanguage.text('Refresh storage'),
             visualDensity: VisualDensity.compact,
             onPressed: _hasStorage ? _refreshStorageVolumes : _requestStorage,
             icon: Icon(Icons.refresh_rounded, color: _accent),
@@ -2221,11 +2221,11 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
         child: Row(children: [
           Expanded(child: Text(AppLanguage.text(_fileCategory), style: TextStyle(fontSize: 27,
             fontWeight: FontWeight.w800, color: foreground))),
-          IconButton(onPressed: _scanningDuplicates ? null : _findDuplicates, tooltip: 'Find identical files', icon: Icon(Icons.copy_all_rounded, color: _accent)),
+          IconButton(onPressed: _scanningDuplicates ? null : _findDuplicates, tooltip: AppLanguage.text('Find identical files'), icon: Icon(Icons.copy_all_rounded, color: _accent)),
           if (_clipboardEntity != null)
-            IconButton(onPressed: _pasteClipboard, tooltip: 'Paste', icon: Icon(Icons.content_paste_rounded, color: _accent)),
+            IconButton(onPressed: _pasteClipboard, tooltip: AppLanguage.text('Paste'), icon: Icon(Icons.content_paste_rounded, color: _accent)),
           IconButton(onPressed: _createFolder, tooltip: 'New folder', icon: Icon(Icons.create_new_folder_rounded, color: _accent)),
-          IconButton(onPressed: () => _loadDirectory(_root), tooltip: 'Home folder', icon: Icon(Icons.home_rounded, color: _accent)),
+          IconButton(onPressed: () => _loadDirectory(_root), tooltip: AppLanguage.text('Home folder'), icon: Icon(Icons.home_rounded, color: _accent)),
         ]),
       ),
       if (!_hasStorage)
@@ -2250,17 +2250,17 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
             TextField(
               textInputAction: TextInputAction.search,
               decoration: InputDecoration(
-                hintText: _globalSearchActive ? 'Search all storage' : 'Search this folder',
+                hintText: AppLanguage.text(_globalSearchActive ? 'Search all storage' : 'Search this folder'),
                 prefixIcon: Icon(Icons.search_rounded, color: _accent),
                 suffixIcon: Row(mainAxisSize: MainAxisSize.min, children: [
                   if (_search.isNotEmpty)
                     IconButton(
-                      tooltip: 'Clear search',
+                      tooltip: AppLanguage.text('Clear search'),
                       onPressed: _clearGlobalSearch,
                       icon: const Icon(Icons.close_rounded),
                     ),
                   IconButton(
-                    tooltip: 'Search every accessible storage location',
+                    tooltip: AppLanguage.text('Search every accessible storage location'),
                     onPressed: _globalSearchBusy ? null : _searchAllStorage,
                     icon: Icon(Icons.travel_explore_rounded, color: _accent),
                   ),
@@ -2298,7 +2298,7 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
               Expanded(child: Text(_current.path, maxLines: 1, overflow: TextOverflow.ellipsis,
                 style: const TextStyle(fontSize: 10, color: Colors.white60))),
               PopupMenuButton<String>(
-                tooltip: 'Switch storage volume',
+                tooltip: AppLanguage.text('Switch storage volume'),
                 icon: Icon(Icons.sd_storage_rounded, color: _accent, size: 19),
                 onSelected: (path) {
                   final volume = Directory(path);
@@ -2309,13 +2309,13 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
                   PopupMenuItem(value: path, child: Text(path, maxLines: 1, overflow: TextOverflow.ellipsis))).toList(),
               ),
               PopupMenuButton<String>(
-                tooltip: 'File display method',
+                tooltip: AppLanguage.text('File display method'),
                 onSelected: (value) => setState(() => _viewMode = value),
                 itemBuilder: (context) => const [
-                  PopupMenuItem(value: 'List', child: Text('List view')),
-                  PopupMenuItem(value: 'Compact', child: Text('Compact view')),
-                  PopupMenuItem(value: 'Grid', child: Text('Grid view')),
-                  PopupMenuItem(value: 'Large thumbnails', child: Text('Large thumbnails')),
+                  PopupMenuItem(value: 'List', child: Text(AppLanguage.text('List view'))),
+                  PopupMenuItem(value: 'Compact', child: Text(AppLanguage.text('Compact view'))),
+                  PopupMenuItem(value: 'Grid', child: Text(AppLanguage.text('Grid view'))),
+                  PopupMenuItem(value: AppLanguage.text('Large thumbnails'), child: Text(AppLanguage.text('Large thumbnails'))),
                 ],
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 6),
@@ -2323,26 +2323,26 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
                 ),
               ),
               PopupMenuButton<String>(
-                tooltip: 'Sort files',
+                tooltip: AppLanguage.text('Sort files'),
                 onSelected: (value) => setState(() {
-                  if (value == 'Folders first' || value == 'No folder priority') {
-                    _foldersFirst = value == 'Folders first';
-                  } else if (value == 'Ascending' || value == 'Descending') {
-                    _sortDescending = value == 'Descending';
+                  if (value == AppLanguage.text('Folders first') || value == AppLanguage.text('No folder priority')) {
+                    _foldersFirst = value == AppLanguage.text('Folders first');
+                  } else if (value == AppLanguage.text('Ascending') || value == AppLanguage.text('Descending')) {
+                    _sortDescending = value == AppLanguage.text('Descending');
                   } else {
                     _sortMode = value;
                   }
                 }),
                 itemBuilder: (context) => const [
-                  PopupMenuItem(value: 'Name', child: Text('Sort by name')),
-                  PopupMenuItem(value: 'Size', child: Text('Sort by size')),
-                  PopupMenuItem(value: 'Date', child: Text('Sort by date')),
-                  PopupMenuItem(value: 'Type', child: Text('Sort by type')),
-                  PopupMenuItem(value: 'Ascending', child: Text('Ascending')),
-                  PopupMenuItem(value: 'Descending', child: Text('Descending')),
+                  PopupMenuItem(value: 'Name', child: Text(AppLanguage.text('Sort by name'))),
+                  PopupMenuItem(value: 'Size', child: Text(AppLanguage.text('Sort by size'))),
+                  PopupMenuItem(value: 'Date', child: Text(AppLanguage.text('Sort by date'))),
+                  PopupMenuItem(value: 'Type', child: Text(AppLanguage.text('Sort by type'))),
+                  PopupMenuItem(value: AppLanguage.text('Ascending'), child: Text(AppLanguage.text('Ascending'))),
+                  PopupMenuItem(value: AppLanguage.text('Descending'), child: Text(AppLanguage.text('Descending'))),
                   PopupMenuDivider(),
-                  PopupMenuItem(value: 'Folders first', child: Text('Folders first')),
-                  PopupMenuItem(value: 'No folder priority', child: Text('No folder priority')),
+                  PopupMenuItem(value: AppLanguage.text('Folders first'), child: Text(AppLanguage.text('Folders first'))),
+                  PopupMenuItem(value: AppLanguage.text('No folder priority'), child: Text(AppLanguage.text('No folder priority'))),
                 ],
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
@@ -2356,14 +2356,14 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
         Expanded(child: _categoryScanBusy
           ? const Center(child: CircularProgressIndicator())
           : visibleItems.isEmpty
-          ? const Center(child: Text('No matching files found', style: TextStyle(color: Colors.white54)))
-          : _viewMode == 'Grid' || _viewMode == 'Large thumbnails'
+          ? const Center(child: Text(AppLanguage.text('No matching files found'), style: TextStyle(color: Colors.white54)))
+          : _viewMode == 'Grid' || _viewMode == AppLanguage.text('Large thumbnails')
           ? GridView.builder(
               padding: const EdgeInsets.fromLTRB(18, 0, 18, 16),
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: _viewMode == 'Large thumbnails' ? 2 : 3,
+                crossAxisCount: _viewMode == AppLanguage.text('Large thumbnails') ? 2 : 3,
                 crossAxisSpacing: 9, mainAxisSpacing: 9,
-                childAspectRatio: _viewMode == 'Large thumbnails' ? .82 : .88,
+                childAspectRatio: _viewMode == AppLanguage.text('Large thumbnails') ? .82 : .88,
               ),
               itemCount: visibleItems.length,
               itemBuilder: (context, index) {
@@ -2375,7 +2375,7 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
                   child: _glass(child: Column(children: [
                     Expanded(child: isFolder
                       ? Icon(Icons.folder_rounded, color: _accent, size: 54)
-                      : MediaThumbnail(key: ValueKey(item.path), path: item.path, accent: _accent, size: _viewMode == 'Large thumbnails' ? 126 : 88)),
+                      : MediaThumbnail(key: ValueKey(item.path), path: item.path, accent: _accent, size: _viewMode == AppLanguage.text('Large thumbnails') ? 126 : 88)),
                     Padding(padding: const EdgeInsets.fromLTRB(6, 5, 6, 7),
                       child: Text(_nameOf(item), maxLines: 2, overflow: TextOverflow.ellipsis,
                         textAlign: TextAlign.center, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600))),
@@ -2421,13 +2421,13 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
                         if (value == 'folder_pin' && item is Directory) _setFolderPin(item);
                       },
                       itemBuilder: (context) => [
-                        if (item is Directory) const PopupMenuItem(value: 'folder_pin', child: Text('Set / remove in-app Folder PIN')),
-                        const PopupMenuItem(value: 'copy', child: Text('Copy')),
-                        PopupMenuItem(value: 'cut', child: Text('Cut')),
+                        if (item is Directory) const PopupMenuItem(value: 'folder_pin', child: Text(AppLanguage.text('Set / remove in-app Folder PIN'))),
+                        const PopupMenuItem(value: 'copy', child: Text(AppLanguage.text('Copy'))),
+                        PopupMenuItem(value: 'cut', child: Text(AppLanguage.text('Cut'))),
                         PopupMenuItem(value: 'rename', child: Text('Rename')),
-                        PopupMenuItem(value: 'delete', child: Text('Move to Recycle Bin')),
-                        PopupMenuItem(value: 'share', child: Text('Share')),
-                        PopupMenuItem(value: 'details', child: Text('Properties')),
+                        PopupMenuItem(value: 'delete', child: Text(AppLanguage.text('Move to Recycle Bin'))),
+                        PopupMenuItem(value: 'share', child: Text(AppLanguage.text('Share'))),
+                        PopupMenuItem(value: 'details', child: Text(AppLanguage.text('Properties'))),
                       ],
                     ),
                   ])),
