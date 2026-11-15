@@ -203,7 +203,6 @@ class AppLanguage {
     'Switch storage volume': 'ගබඩා කොටස මාරු කරන්න',
     'File display method': 'ගොනු පෙන්වන ආකාරය',
     'Sort files': 'ගොනු වර්ග කරන්න',
-    'No byte-identical duplicate files found in the scanned area. Scanned up to $visited files.': 'පරීක්ෂා කළ ස්ථානවල එකම ගොනු හමු නොවීය. ගොනු $visitedක් පරීක්ෂා කරන ලදී.',
     'New password (at least 6 characters)': 'නව මුරපදය (අවම අක්ෂර 6ක්)',
     'Set up password recovery': 'මුරපද ප්‍රතිසාධනය සකසන්න',
     'Open the built-in assistant for file-manager help and guidance': 'ගොනු කළමනාකරණය පිළිබඳ උදව් සඳහා සහායකයා විවෘත කරන්න',
