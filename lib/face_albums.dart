@@ -14,10 +14,12 @@ class FaceAlbumsPage extends StatefulWidget {
     super.key,
     required this.targetDirectory,
     required this.accent,
+    required this.onLanguageChanged,
   });
 
   final Directory targetDirectory;
   final Color accent;
+  final Future<void> Function(String language) onLanguageChanged;
 
   @override
   State<FaceAlbumsPage> createState() => _FaceAlbumsPageState();
@@ -27,14 +29,17 @@ class _FaceAlbumsPageState extends State<FaceAlbumsPage> {
   static const int _maxImages = 1200;
   static const int _maxDirectories = 5000;
   static const int _maxFileBytes = 12 * 1024 * 1024;
-  static const double _matchThreshold = 0.62;
-  static const double _minimumMatchMargin = 0.08;
+  // A 0.60 cosine score is a conservative threshold for a possible match.
+  // The margin prevents ambiguous faces from being silently combined.
+  static const double _matchThreshold = 0.60;
+  static const double _minimumMatchMargin = 0.06;
 
   bool _busy = false;
   String _status = 'Scan your accessible photo folders to create private, on-device people albums.';
   double _progress = 0;
   int _processed = 0;
   int _skipped = 0;
+  int _detectedFaces = 0;
   List<_PersonCluster> _groups = <_PersonCluster>[];
   final List<({ _PersonCluster group, String path })> _undoRemovals = [];
 
@@ -125,6 +130,35 @@ class _FaceAlbumsPageState extends State<FaceAlbumsPage> {
     return dot / (math.sqrt(normA) * math.sqrt(normB));
   }
 
+  Future<void> _changeLanguage() async {
+    final selected = await showAppLanguageDialog(context, accent: widget.accent);
+    if (selected == null) return;
+    await widget.onLanguageChanged(selected);
+    if (mounted) setState(() {});
+  }
+
+  String get _displayStatus {
+    if (!AppLanguage.isSinhala) return _status;
+    if (_status == 'Checking photo access…') return 'ඡායාරූප ප්‍රවේශය පරීක්ෂා කරමින්…';
+    if (_status == 'Preparing offline face model…') return 'අන්තර්ජාලය නොමැති මුහුණු ආකෘතිය සූදානම් කරමින්…';
+    if (_status.startsWith('Analysing photo ')) {
+      return 'ඡායාරූප ' + _status.replaceFirst('Analysing photo ', '').replaceAll(' of ', 'න් ') + ' පරීක්ෂා කරමින්…';
+    }
+    if (_status.startsWith('Finished:')) {
+      final result = RegExp(r'Finished: (\d+) possible people groups from (\d+) photos').firstMatch(_status);
+      if (result != null) {
+        return 'ඡායාරූප ${result.group(2)}කින් විය හැකි පුද්ගල කණ්ඩායම් ${result.group(1)}ක් හමු විය. ගැළපීම් ඔබම පරීක්ෂා කරන්න.';
+      }
+    }
+    if (_status.startsWith('Detected ')) {
+      return 'ඡායාරූප $_processedක මුහුණු $_detectedFacesක් හඳුනාගත් නමුත් නැවත හමුවූ මුහුණු කණ්ඩායම් හමු නොවීය. එකම පුද්ගලයා පැහැදිලිව පෙනෙන ඡායාරූප කිහිපයක් භාවිත කරන්න.';
+    }
+    if (_status.startsWith('Face scan could not finish:')) {
+      return 'මුහුණු පරීක්ෂාව අවසන් කළ නොහැකි විය: ' + _status.substring('Face scan could not finish:'.length).trim();
+    }
+    return AppLanguage.text(_status);
+  }
+
   Future<void> _startScan() async {
     if (_busy) return;
     setState(() {
@@ -132,6 +166,7 @@ class _FaceAlbumsPageState extends State<FaceAlbumsPage> {
       _progress = 0;
       _processed = 0;
       _skipped = 0;
+      _detectedFaces = 0;
       _groups = <_PersonCluster>[];
       _undoRemovals.clear();
       _status = 'Checking photo access…';
@@ -177,6 +212,7 @@ class _FaceAlbumsPageState extends State<FaceAlbumsPage> {
             // Full mode provides the eye alignment expected by the embedding model.
             mode: face_ml.FaceDetectionMode.full,
           );
+          _detectedFaces += faces.length;
 
           for (final face in faces.take(5)) {
             try {
@@ -237,13 +273,17 @@ class _FaceAlbumsPageState extends State<FaceAlbumsPage> {
         }
       }
 
-      clusters.removeWhere((group) => group.paths.isEmpty);
+      // A one-photo cluster is not a useful album. Keep only possible
+      // repeat appearances and explain when no group passed the match threshold.
+      clusters.removeWhere((group) => group.paths.length < 2);
       clusters.sort((a, b) => b.paths.length.compareTo(a.paths.length));
       if (mounted) {
         setState(() {
           _groups = clusters;
           _progress = 1;
-          _status = 'Finished: ${clusters.length} possible people groups from ${_processed} photos. Review groups before relying on matches.';
+          _status = clusters.isEmpty
+              ? 'Detected $_detectedFaces face(s) across $_processed photos, but no repeated-face groups passed the similarity threshold. Try at least two clear photos of the same person.'
+              : 'Finished: ${clusters.length} possible people groups from ${_processed} photos. Review groups before relying on matches.';
         });
       }
     } catch (error) {
@@ -415,6 +455,13 @@ class _FaceAlbumsPageState extends State<FaceAlbumsPage> {
       appBar: AppBar(
         title: Text(AppLanguage.text('Face Albums')),
         backgroundColor: Colors.transparent,
+        actions: [
+          IconButton(
+            tooltip: AppLanguage.text('Language'),
+            onPressed: _changeLanguage,
+            icon: const Icon(Icons.translate_rounded),
+          ),
+        ],
       ),
       body: ListView(
         padding: const EdgeInsets.all(16),
@@ -438,11 +485,11 @@ class _FaceAlbumsPageState extends State<FaceAlbumsPage> {
             const SizedBox(height: 12),
             LinearProgressIndicator(value: _progress == 0 ? null : _progress, color: widget.accent),
             const SizedBox(height: 6),
-            Text(AppLanguage.isSinhala ? '${(_progress * 100).round()}% • $_processed පරීක්ෂා කළා • $_skipped මඟහැරුණා' : '${(_progress * 100).round()}% • $_processed scanned • $_skipped skipped',
+            Text(AppLanguage.isSinhala ? '${(_progress * 100).round()}% • $_processed පරීක්ෂා කළා • $_skipped මඟහැරුණා' : '${(_progress * 100).round()}% • $_processed scanned • $_detectedFaces faces • $_skipped skipped',
               style: const TextStyle(color: Colors.white60, fontSize: 11)),
           ],
           const SizedBox(height: 12),
-          Text(AppLanguage.text(_status), style: const TextStyle(color: Colors.white70, fontSize: 12)),
+          Text(_displayStatus, style: const TextStyle(color: Colors.white70, fontSize: 12)),
           if (!_busy && _groups.isNotEmpty) ...[
             const SizedBox(height: 12),
             Text(AppLanguage.text('Possible people') + ' • ${_groups.length}',
