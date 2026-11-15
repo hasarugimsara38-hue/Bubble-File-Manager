@@ -102,8 +102,8 @@ class _AquaAdvancedToolsState extends State<AquaAdvancedTools> {
       builder: (dialogContext) => AlertDialog(
         title: Text(AppLanguage.text(storedHash == null ? 'Create Vault PIN' : 'Unlock Vault')),
         content: SingleChildScrollView(child: Column(mainAxisSize: MainAxisSize.min, children: [
-          TextField(controller: pinController, obscureText: true, keyboardType: TextInputType.number,
-            decoration: InputDecoration(labelText: AppLanguage.text('Password (at least 6 digits)'))),
+          TextField(controller: pinController, obscureText: true, keyboardType: TextInputType.visiblePassword,
+            decoration: InputDecoration(labelText: AppLanguage.text('Password (at least 6 characters)'))),
           if (storedHash == null) ...[
             TextField(controller: confirmController, obscureText: true, keyboardType: TextInputType.number,
               decoration: InputDecoration(labelText: AppLanguage.text('Confirm password'))),
@@ -144,7 +144,7 @@ class _AquaAdvancedToolsState extends State<AquaAdvancedTools> {
       final question = recoveryQuestionController.text.trim();
       final answer = _normaliseRecoveryAnswer(recoveryAnswerController.text);
       if (pin.length < 6 || pin != confirmController.text || question.length < 5 || answer.length < 2) {
-        _say('Use a PIN of at least 6 digits, confirm it, and enter your own recovery question and answer.');
+        _say('Use a password of at least 6 characters, confirm it, and enter your own recovery question and answer.');
         pinController.dispose();
         confirmController.dispose();
         recoveryQuestionController.dispose();
@@ -161,7 +161,7 @@ class _AquaAdvancedToolsState extends State<AquaAdvancedTools> {
       await _secure.write(key: 'aqua_vault_recovery_salt', value: answerRecord.split(':').first);
       await _secure.write(key: 'aqua_vault_recovery_hash', value: answerRecord.split(':').last);
       await _secure.write(key: 'aqua_vault_key', value: base64Encode(keyBytes));
-      _say('Encrypted Vault created. Keep your PIN and recovery answer private.');
+      _say('Encrypted Vault created. Keep your password and recovery answer private.');
       pinController.dispose();
       confirmController.dispose();
       recoveryQuestionController.dispose();
@@ -174,7 +174,7 @@ class _AquaAdvancedToolsState extends State<AquaAdvancedTools> {
     recoveryQuestionController.dispose();
       recoveryAnswerController.dispose();
     if (digest != storedHash) {
-      _say('Incorrect PIN.');
+      _say('Incorrect password.');
       return false;
     }
     return _setRecoveryAnswerIfMissing();
@@ -190,13 +190,13 @@ class _AquaAdvancedToolsState extends State<AquaAdvancedTools> {
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
-        title: Text(AppLanguage.text('Set up PIN recovery')),
+        title: Text(AppLanguage.text('Set up password recovery')),
         content: Column(mainAxisSize: MainAxisSize.min, children: [
           Text(AppLanguage.text('Create your own question and answer. Choose an answer that is private and difficult for others to guess.')),
           TextField(controller: questionController,
-            decoration: const InputDecoration(labelText: 'Your recovery question')),
+            decoration: InputDecoration(labelText: AppLanguage.text('Your recovery question'))),
           TextField(controller: answerController, obscureText: true,
-            decoration: const InputDecoration(labelText: 'Your answer')),
+            decoration: InputDecoration(labelText: AppLanguage.text('Your answer'))),
         ]),
         actions: [
           FilledButton(onPressed: () => Navigator.pop(dialogContext, true),
@@ -333,12 +333,12 @@ class _AquaAdvancedToolsState extends State<AquaAdvancedTools> {
         title: Text(AppLanguage.text('Change Vault password')),
         content: Column(mainAxisSize: MainAxisSize.min, children: [
           TextField(controller: newPinController, obscureText: true, keyboardType: TextInputType.number,
-            decoration: InputDecoration(labelText: AppLanguage.text('New password (at least 6 digits)'))),
+            decoration: InputDecoration(labelText: AppLanguage.text('New password (at least 6 characters)'))),
           TextField(controller: confirmController, obscureText: true, keyboardType: TextInputType.number,
             decoration: InputDecoration(labelText: AppLanguage.text('Confirm new password'))),
         ]),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: const Text('Cancel')),
+          TextButton(onPressed: () => Navigator.pop(dialogContext, false), child: Text(AppLanguage.text('Cancel'))),
           FilledButton(onPressed: () => Navigator.pop(dialogContext, true), child: Text(AppLanguage.text('Save password'))),
         ],
       ),
@@ -346,12 +346,12 @@ class _AquaAdvancedToolsState extends State<AquaAdvancedTools> {
     if (result == true) {
       final pin = newPinController.text;
       if (pin.length < 6 || pin != confirmController.text) {
-        _say('PIN must be at least 6 digits and both entries must match.');
+        _say('Password must be at least 6 characters and both entries must match.');
       } else {
         final pinRecord = await _saltedDigest(pin);
         await _secure.write(key: 'aqua_vault_pin_salt', value: pinRecord.split(':').first);
         await _secure.write(key: 'aqua_vault_pin_hash', value: pinRecord.split(':').last);
-        _say('Vault PIN changed successfully.');
+        _say('Vault password changed successfully.');
       }
     }
     newPinController.dispose();
