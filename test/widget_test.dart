@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:bubble_file_manager/main.dart';
 import 'package:bubble_file_manager/ai_assistant.dart';
 import 'package:bubble_file_manager/home_companions.dart';
+import 'package:bubble_file_manager/app_language.dart';
 
 void main() {
   testWidgets('Bubble File Manager shows splash and opens the Assistant from Home', (tester) async {
@@ -71,6 +72,36 @@ void main() {
     expect(selectedLanguage, 'si');
     await tester.tap(find.text('English'));
     expect(selectedLanguage, 'en');
+  });
+
+  testWidgets('Language picker can be opened from a feature screen', (tester) async {
+    String? selected;
+    await tester.pumpWidget(MaterialApp(
+      home: Builder(
+        builder: (context) => Scaffold(
+          body: Center(
+            child: ElevatedButton(
+              onPressed: () async {
+                selected = await showAppLanguageDialog(
+                  context,
+                  accent: const Color(0xFF20E4E8),
+                );
+              },
+              child: const Text('Open language'),
+            ),
+          ),
+        ),
+      ),
+    ));
+
+    await tester.tap(find.text('Open language'));
+    await tester.pumpAndSettle();
+    expect(find.text('සිංහල'), findsOneWidget);
+    expect(find.text('English'), findsOneWidget);
+
+    await tester.tap(find.text('සිංහල'));
+    await tester.pumpAndSettle();
+    expect(selected, 'si');
   });
 
   testWidgets('Hasaru and Yunadie type messages and offer working feature options', (tester) async {
