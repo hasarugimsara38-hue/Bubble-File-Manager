@@ -348,7 +348,8 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
 
   Color get _accent => aquaAccents[_theme];
 
-  bool _showSplash = true;
+  bool _showSplash = false;
+  bool _splashTimerStarted = false;
   final GlobalKey<_BubbleFieldState> _bubbleFieldKey = GlobalKey<_BubbleFieldState>();
 
   @override
@@ -373,9 +374,10 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
         setState(() => _waterTilt = next);
       }
     }, onError: (_) {});
-    Future<void>.delayed(const Duration(milliseconds: 3200), () {
-      if (mounted) setState(() => _showSplash = false);
-    });
+    if (widget.initialLanguage != null) {
+      _beginSplash();
+      _startAppServices();
+    }
   }
 
   Future<void> _restoreLanguagePreference() async {
@@ -393,6 +395,7 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
         _languageReady = true;
         _hasSelectedLanguage = true;
       });
+      _beginSplash();
       _startAppServices();
     } else {
       setState(() => _languageReady = true);
@@ -408,11 +411,22 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
       // Keep the selected language for this session even if storage fails.
     }
     if (!mounted) return;
+    final firstSelection = !_hasSelectedLanguage;
     setState(() {
       _languageReady = true;
       _hasSelectedLanguage = true;
     });
+    if (firstSelection) _beginSplash();
     _startAppServices();
+  }
+
+  void _beginSplash() {
+    if (_splashTimerStarted) return;
+    _splashTimerStarted = true;
+    setState(() => _showSplash = true);
+    Future<void>.delayed(const Duration(milliseconds: 3200), () {
+      if (mounted) setState(() => _showSplash = false);
+    });
   }
 
   void _startAppServices() {
@@ -1957,12 +1971,12 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
           dragHandleColor: _accent.withOpacity(.65),
         ),
       ),
-      home: _showSplash
-          ? const BubbleSplashScreen()
-          : !_languageReady
-              ? const _LanguageLoadingScreen()
-              : !_hasSelectedLanguage
-                  ? LanguageSelectionScreen(onSelected: _selectLanguage)
+      home: !_languageReady
+          ? const _LanguageLoadingScreen()
+          : !_hasSelectedLanguage
+              ? LanguageSelectionScreen(onSelected: _selectLanguage)
+              : _showSplash
+                  ? const BubbleSplashScreen()
                   : Scaffold(
         body: Listener(
           behavior: HitTestBehavior.translucent,
@@ -2736,12 +2750,12 @@ class _BubbleSplashScreenState extends State<BubbleSplashScreen>
                       style: TextStyle(fontSize: 19, letterSpacing: 4.0,
                         fontWeight: FontWeight.w300, color: Color(0xFFE3FFFC))),
                     const SizedBox(height: 22),
-                    Text('Safety and Relax File Management System',
+                    Text(AppLanguage.text('Safety and Relax File Management System'),
                       textAlign: TextAlign.center,
                       style: TextStyle(fontSize: 10, letterSpacing: .6,
                         color: Colors.white.withOpacity(.72))),
                     const SizedBox(height: 7),
-                    Text('Created by H.G.Aluthge',
+                    Text(AppLanguage.text('Created by H.G.Aluthge'),
                       style: TextStyle(fontSize: 10, letterSpacing: 1.1,
                         color: Colors.white.withOpacity(.52))),
                   ],
