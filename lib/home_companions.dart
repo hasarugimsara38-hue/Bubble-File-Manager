@@ -30,6 +30,8 @@ class _CompanionChoice {
 class _HomeCompanionsPanelState extends State<HomeCompanionsPanel>
     with SingleTickerProviderStateMixin {
   Timer? _typingTimer;
+  Timer? _introTimer;
+  bool _openingSequence = false;
   late final AnimationController _characterMotion;
   String _speaker = 'Hasaru';
   String _fullText = '';
@@ -53,6 +55,7 @@ class _HomeCompanionsPanelState extends State<HomeCompanionsPanel>
   @override
   void dispose() {
     _typingTimer?.cancel();
+    _introTimer?.cancel();
     _characterMotion.dispose();
     super.dispose();
   }
@@ -105,22 +108,113 @@ class _HomeCompanionsPanelState extends State<HomeCompanionsPanel>
   }
 
   void _showWelcome({bool initial = false}) {
+    _introTimer?.cancel();
+    _openingSequence = true;
+    _playOpeningStep(0, initial: initial);
+  }
+
+  void _playOpeningStep(int step, {bool initial = false}) {
+    final script = widget.isSinhala
+        ? <({String speaker, String message})>[
+            (
+              speaker: 'Hasaru',
+              message: 'හායි! Bubble File Manager වෙත සාදරයෙන් පිළිගනිමු! මම Hasaru. ඔයාගේ ගොනු ආරක්ෂිතව සහ පිළිවෙළට තබාගන්න මම උදව් කරන්නම්.',
+            ),
+            (
+              speaker: 'Yunadie',
+              message: 'හායි! මම Yunadie. ඡායාරූප, වීඩියෝ සහ මතකයන් සොයාගෙන ලස්සනට සකස් කරගන්න මම ඔයාට උදව් කරනවා.',
+            ),
+            (
+              speaker: 'Hasaru',
+              message: 'Yunadie මගේ හොඳම යාළුවා. අපි දෙන්නා එකම Aqua කණ්ඩායමේ සහකරුවන්. අලුත් දේවල් ගවේෂණය කරන්න අපි හැමදාම සූදානම්!',
+            ),
+            (
+              speaker: 'Yunadie',
+              message: 'අද අපේ පළමු Aqua මෙහෙයුම පටන් ගන්නයි යන්නේ! ඔයාගේ ගොනු සොයාගෙන, ඡායාරූප පිළිවෙළට සකස් කරලා, වැදගත් දේවල් ආරක්ෂිතව තබමු. අපි පටන් ගමුද?',
+            ),
+          ]
+        : <({String speaker, String message})>[
+            (
+              speaker: 'Hasaru',
+              message: 'Hello! Welcome to Bubble File Manager! I am Hasaru. I will help you keep your files safe and organised.',
+            ),
+            (
+              speaker: 'Yunadie',
+              message: 'Hi! I am Yunadie. I can help you discover and organise your photos, videos and favourite memories.',
+            ),
+            (
+              speaker: 'Hasaru',
+              message: 'Yunadie is my best friend. We are teammates in the Aqua crew, always ready to explore and help you.',
+            ),
+            (
+              speaker: 'Yunadie',
+              message: 'Our first Aqua mission starts now! Let us find your files, organise your photos and keep important things safe. Shall we begin?',
+            ),
+          ];
+
+    if (step >= script.length) {
+      _openingSequence = false;
+      return;
+    }
+
+    final line = script[step];
+    final isFinalLine = step == script.length - 1;
     _setDialogue(
-      speaker: 'Hasaru',
+      speaker: line.speaker,
+      message: line.message,
+      choices: isFinalLine
+          ? <_CompanionChoice>[
+              _CompanionChoice(widget.isSinhala ? 'ගොනු පිරික්සන්න' : 'Browse files', 'files_intro'),
+              _CompanionChoice(widget.isSinhala ? 'ඡායාරූප සහ වීඩියෝ' : 'Photos & videos', 'media_intro'),
+              _CompanionChoice(widget.isSinhala ? 'විශේෂාංග' : 'Special features', 'features_intro'),
+              _CompanionChoice(widget.isSinhala ? 'සහායකයාගෙන් අසන්න' : 'Ask Assistant', 'assistant'),
+            ]
+          : <_CompanionChoice>[],
+      initial: initial,
+    );
+
+    if (!isFinalLine) {
+      // Keep each speaker on screen until the typewriter has finished and
+      // the user has had a short moment to read the line.
+      final glyphCount = line.message.characters.length;
+      _introTimer = Timer(
+        Duration(milliseconds: glyphCount * 18 + 1100),
+        () {
+          if (!mounted || !_openingSequence) return;
+          _playOpeningStep(step + 1);
+        },
+      );
+    } else {
+      final glyphCount = line.message.characters.length;
+      _introTimer = Timer(
+        Duration(milliseconds: glyphCount * 18 + 150),
+        () {
+          if (mounted) setState(() => _openingSequence = false);
+        },
+      );
+    }
+  }
+
+  void _skipOpeningSequence() {
+    _introTimer?.cancel();
+    _openingSequence = false;
+    _setDialogue(
+      speaker: 'Yunadie',
       message: widget.isSinhala
-          ? 'හායි! මම Hasaru. ඔයාගේ ගොනු පිළිවෙළට තබාගන්න මම උදව් කරන්නම්. අද අපි මොනවා බලමුද?'
-          : 'Hi! I am Hasaru. I can help you keep your files organised. What would you like to explore today?',
+          ? 'අපේ Aqua ගමනට සාදරයෙන් පිළිගනිමු! අද මොන මෙහෙයුමෙන් පටන් ගමුද?'
+          : 'Welcome to our Aqua adventure! Which mission shall we start with?',
       choices: <_CompanionChoice>[
         _CompanionChoice(widget.isSinhala ? 'ගොනු පිරික්සන්න' : 'Browse files', 'files_intro'),
         _CompanionChoice(widget.isSinhala ? 'ඡායාරූප සහ වීඩියෝ' : 'Photos & videos', 'media_intro'),
         _CompanionChoice(widget.isSinhala ? 'විශේෂාංග' : 'Special features', 'features_intro'),
         _CompanionChoice(widget.isSinhala ? 'සහායකයාගෙන් අසන්න' : 'Ask Assistant', 'assistant'),
       ],
-      initial: initial,
     );
   }
 
   void _greetCharacter(String name) {
+    _introTimer?.cancel();
+    _openingSequence = false;
     final isHasaru = name == 'Hasaru';
     _setDialogue(
       speaker: name,
@@ -390,6 +484,20 @@ class _HomeCompanionsPanelState extends State<HomeCompanionsPanel>
                     const SizedBox(width: 6),
                     Text(_speaker, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w800)),
                     const Spacer(),
+                    if (_openingSequence)
+                      TextButton(
+                        onPressed: _skipOpeningSequence,
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                          minimumSize: Size.zero,
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                          foregroundColor: widget.accent,
+                        ),
+                        child: Text(
+                          widget.isSinhala ? 'මඟහරින්න' : 'Skip intro',
+                          style: const TextStyle(fontSize: 10),
+                        ),
+                      ),
                     if (_typing)
                       TextButton(
                         onPressed: _showAllText,
