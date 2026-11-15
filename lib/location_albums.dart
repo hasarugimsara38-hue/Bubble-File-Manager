@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'app_language.dart';
 
 class LocationAlbumsPage extends StatefulWidget {
   const LocationAlbumsPage({super.key, required this.targetDirectory, required this.accent});
@@ -24,6 +25,28 @@ class _LocationAlbumsPageState extends State<LocationAlbumsPage> {
   final Map<String, String> _placeNames = <String, String>{};
   bool _lookingUpPlaces = false;
 
+  String get _displayStatus {
+    if (!AppLanguage.isSinhala) return _status;
+    if (_status == 'Scan photos to find locations saved in their GPS metadata.') {
+      return 'GPS දත්තවල සුරක්ෂිත කර ඇති ස්ථාන සොයාගැනීමට ඡායාරූප පරීක්ෂා කරන්න.';
+    }
+    if (_status.startsWith('Looking up place names')) return 'ස්ථාන නාම සොයමින්…';
+    if (_status.startsWith('Resolved ')) return _status.replaceFirst('Resolved ', 'හඳුනාගත් ස්ථාන නාම: ' ).replaceAll(' of ', ' / ').replaceAll(' place names…', '');
+    if (_status.startsWith('Place-name lookup finished')) return 'ස්ථාන නාම සෙවීම අවසන්. හඳුනාගත නොහැකි ස්ථාන GPS ඛණ්ඩාංක ලෙස පෙන්වයි.';
+    if (_status.startsWith('Checking photo and storage access')) return 'ඡායාරූප සහ ගබඩා ප්‍රවේශය පරීක්ෂා කරමින්…';
+    if (_status.startsWith('Allow “All files access”')) return 'Android සැකසුම් තුළ “All files access” අවසරය ලබාදී නැවත පරීක්ෂා කරන්න.';
+    if (_status.startsWith('Allow "All files access"')) return 'Android සැකසුම් තුළ “All files access” අවසරය ලබාදී නැවත පරීක්ෂා කරන්න.';
+    if (_status.startsWith('Reading photo GPS metadata')) return 'ඡායාරූපවල GPS දත්ත මෙම උපාංගය තුළම කියවමින්…';
+    if (_status.startsWith('Location metadata permission was not granted')) return 'ස්ථාන දත්ත අවසරය ලබාදී නැත. කියවිය හැකි GPS දත්ත පරීක්ෂා කරමින්…';
+    if (_status.startsWith('Checked ') && _status.endsWith(' photos…')) return 'ඡායාරූප ' + _status.replaceAll(RegExp(r'[^0-9]'), '') + 'ක් පරීක්ෂා කළා…';
+    if (_status.startsWith('Checked ') && _status.contains('Found GPS details in')) {
+      final counts = RegExp(r'Checked (\d+) photos\. Found GPS details in (\d+) photos across (\d+) location groups').firstMatch(_status);
+      if (counts != null) return 'ඡායාරූප ${counts.group(1)}ක් පරීක්ෂා කළා. GPS දත්ත සහිත ඡායාරූප ${counts.group(2)}ක් ස්ථාන කණ්ඩායම් ${counts.group(3)}කින් හමු වුණා.';
+    }
+    if (_status.startsWith('Location scan failed')) return 'ස්ථාන පරීක්ෂාව අසාර්ථක විය. නැවත උත්සාහ කරන්න.';
+    return _status;
+  }
+
   Map<String, List<_LocatedPhoto>> get _groups {
     final result = <String, List<_LocatedPhoto>>{};
     for (final photo in _photos) {
@@ -39,15 +62,15 @@ class _LocationAlbumsPageState extends State<LocationAlbumsPage> {
     final allowed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Find readable place names?'),
-        content: const Text(
-          'To show names such as town or city, this will send the rounded GPS coordinates of each location group to OpenStreetMap Nominatim. It will not upload your photos. Allow up to 30 location lookups, with a short delay between requests?',
+        title: Text(AppLanguage.text('Find readable place names?')),
+        content: Text(AppLanguage.text(
+          'To show names such as town or city, this will send the rounded GPS coordinates of each location group to OpenStreetMap Nominatim. It will not upload your photos. Allow up to 30 location lookups, with a short delay between requests?'),
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(dialogContext, false),
-            child: const Text('Not now')),
+            child: Text(AppLanguage.text('Not now'))),
           FilledButton(onPressed: () => Navigator.pop(dialogContext, true),
-            child: const Text('Allow lookup')),
+            child: Text(AppLanguage.text('Allow lookup'))),
         ],
       ),
     );
@@ -285,7 +308,7 @@ class _LocationAlbumsPageState extends State<LocationAlbumsPage> {
           child: Column(children: [
             const Padding(
               padding: EdgeInsets.all(14),
-              child: Text('Photo location map', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              child: Text(AppLanguage.text('Photo location map'), style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             ),
             Expanded(child: FlutterMap(
               options: MapOptions(
@@ -307,7 +330,7 @@ class _LocationAlbumsPageState extends State<LocationAlbumsPage> {
             )),
             const Padding(
               padding: EdgeInsets.all(10),
-              child: Text('Map tiles © OpenStreetMap contributors. Exact coordinates remain in this app; place-name lookup is optional.',
+              child: Text(AppLanguage.text('Map tiles © OpenStreetMap contributors. Exact coordinates remain in this app; place-name lookup is optional.'),
                 textAlign: TextAlign.center, style: TextStyle(fontSize: 10, color: Colors.white60)),
             ),
           ]),
@@ -320,11 +343,11 @@ class _LocationAlbumsPageState extends State<LocationAlbumsPage> {
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: const Color(0xFF071E2A),
     appBar: AppBar(
-      title: const Text('Location Albums'),
+      title: Text(AppLanguage.text('Location Albums')),
       backgroundColor: Colors.transparent,
       actions: [
         IconButton(
-          tooltip: 'Scan photos',
+          tooltip: AppLanguage.text('Scan photos'),
           onPressed: _scanning ? null : _scan,
           icon: const Icon(Icons.refresh),
         ),
@@ -341,39 +364,39 @@ class _LocationAlbumsPageState extends State<LocationAlbumsPage> {
               Row(children: [
                 Icon(Icons.location_on_rounded, color: widget.accent, size: 28),
                 const SizedBox(width: 10),
-                const Expanded(child: Text('Find photos by captured location',
+                Expanded(child: Text(AppLanguage.text('Find photos by captured location'),
                   style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16))),
               ]),
               const SizedBox(height: 8),
-              const Text('Uses GPS coordinates embedded in photo metadata. Photos without GPS data cannot be assigned a real location.',
+              Text(AppLanguage.text('Uses GPS coordinates embedded in photo metadata. Photos without GPS data cannot be assigned a real location.'),
                 style: TextStyle(color: Colors.white70, fontSize: 12)),
               const SizedBox(height: 12),
               FilledButton.icon(
                 onPressed: _scanning ? null : _scan,
                 icon: const Icon(Icons.travel_explore),
-                label: Text(_scanning ? 'Scanning…' : 'Scan phone photos'),
+                label: Text(_scanning ? (AppLanguage.isSinhala ? 'පරීක්ෂා කරමින්…' : 'Scanning…') : (AppLanguage.isSinhala ? 'දුරකථනයේ ඡායාරූප පරීක්ෂා කරන්න' : 'Scan phone photos')),
               ),
               if (_scanning) const Padding(
                 padding: EdgeInsets.only(top: 10),
                 child: LinearProgressIndicator(),
               ),
               const SizedBox(height: 8),
-              Text(_status, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+              Text(_displayStatus, style: const TextStyle(color: Colors.white70, fontSize: 12)),
               const SizedBox(height: 5),
-              const Text('Privacy: GPS metadata is processed locally. Opening the map loads map tiles from OpenStreetMap.',
+              Text(AppLanguage.text('Privacy: GPS metadata is processed locally. Opening the map loads map tiles from OpenStreetMap.'),
                 style: TextStyle(color: Colors.white54, fontSize: 10)),
             ]),
           ),
         ),
         const SizedBox(height: 12),
         if (_groups.isNotEmpty) ...[
-          Text('PLACES FOUND • ${_groups.length}', style: const TextStyle(
+          Text((AppLanguage.isSinhala ? 'හමු වූ ස්ථාන • ' : 'PLACES FOUND • ') + '${_groups.length}', style: const TextStyle(
             letterSpacing: 1.4, color: Colors.white70, fontWeight: FontWeight.bold)),
           const SizedBox(height: 8),
           OutlinedButton.icon(
             onPressed: _lookingUpPlaces ? null : _lookupPlaceNames,
             icon: const Icon(Icons.public),
-            label: Text(_lookingUpPlaces ? 'Finding place names…' : 'Find place names online (optional)'),
+            label: Text(_lookingUpPlaces ? (AppLanguage.isSinhala ? 'ස්ථාන නාම සොයමින්…' : 'Finding place names…') : (AppLanguage.isSinhala ? 'අන්තර්ජාලයෙන් ස්ථාන නාම සොයන්න (විකල්ප)' : 'Find place names online (optional)')),
           ),
           ..._groups.entries.map((entry) {
             final photos = entry.value;
@@ -382,10 +405,10 @@ class _LocationAlbumsPageState extends State<LocationAlbumsPage> {
               color: const Color(0xFF12313F),
               child: ExpansionTile(
                 leading: Icon(Icons.place_rounded, color: widget.accent),
-                title: Text(_placeNames[entry.key] ?? 'Location group • ${photos.length} photo(s)'),
-                subtitle: Text('${_placeNames.containsKey(entry.key) ? entry.key + ' • ' : ''}${photos.length} photo(s)', style: const TextStyle(color: Colors.white60)),
+                title: Text(_placeNames[entry.key] ?? (AppLanguage.isSinhala ? 'ස්ථාන කණ්ඩායම • ඡායාරූප ${photos.length}' : 'Location group • ${photos.length} photo(s)')),
+                subtitle: Text('${_placeNames.containsKey(entry.key) ? entry.key + ' • ' : ''}${photos.length} ${AppLanguage.isSinhala ? 'ඡායාරූප' : 'photo(s)'}', style: const TextStyle(color: Colors.white60)),
                 trailing: IconButton(
-                  tooltip: 'Show this group on map',
+                  tooltip: AppLanguage.text('Show this group on map'),
                   onPressed: () => _showMap(first, photos),
                   icon: const Icon(Icons.map_outlined),
                 ),
@@ -398,7 +421,7 @@ class _LocationAlbumsPageState extends State<LocationAlbumsPage> {
                     maxLines: 1, overflow: TextOverflow.ellipsis,
                     style: const TextStyle(fontSize: 10, color: Colors.white54)),
                   trailing: IconButton(
-                    tooltip: 'Show photo location',
+                    tooltip: AppLanguage.text('Show photo location'),
                     onPressed: () => _showMap(photo, <_LocatedPhoto>[photo]),
                     icon: const Icon(Icons.location_searching),
                   ),
@@ -408,7 +431,7 @@ class _LocationAlbumsPageState extends State<LocationAlbumsPage> {
           }),
         ] else if (!_scanning) const Padding(
           padding: EdgeInsets.all(22),
-          child: Text('No location albums yet. Scan your photos to look for GPS metadata.',
+          child: Text(AppLanguage.text('No location albums yet. Scan your photos to look for GPS metadata.'),
             textAlign: TextAlign.center, style: TextStyle(color: Colors.white54)),
         ),
       ],
