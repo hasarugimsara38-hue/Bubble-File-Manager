@@ -133,6 +133,35 @@ void main() {
     expect(selectedAction, 'vault');
   });
 
+  testWidgets('Tapping each anime companion starts its own conversation', (tester) async {
+    String? selectedAction;
+    await tester.pumpWidget(MaterialApp(
+      home: Scaffold(
+        body: ListView(children: <Widget>[
+          HomeCompanionsPanel(
+            accent: const Color(0xFF20E4E8),
+            isSinhala: false,
+            onAction: (action) => selectedAction = action,
+          ),
+        ]),
+      ),
+    ));
+
+    await tester.tap(find.bySemanticsLabel('Talk to Yunadie'));
+    await tester.pump(const Duration(seconds: 2));
+    expect(find.text('Yunadie'), findsWidgets);
+    expect(find.text('Photos'), findsOneWidget);
+    await tester.tap(find.text('Face Albums'));
+    expect(selectedAction, 'faces');
+
+    await tester.tap(find.bySemanticsLabel('Talk to Hasaru'));
+    await tester.pump(const Duration(seconds: 2));
+    expect(find.text('Hasaru'), findsWidgets);
+    expect(find.text('Open Files'), findsOneWidget);
+    await tester.tap(find.text('Open Files'));
+    expect(selectedAction, 'files');
+  });
+
   testWidgets('Hasaru and Yunadie speak Sinhala when Sinhala is selected', (tester) async {
     String? selectedAction;
     await tester.pumpWidget(MaterialApp(
