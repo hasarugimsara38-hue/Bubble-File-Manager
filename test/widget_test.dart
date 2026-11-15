@@ -52,7 +52,8 @@ void main() {
     await tester.pump();
     expect(find.byType(AquaAiAssistantPage), findsOneWidget);
     expect(find.text('Aqua Assistant'), findsOneWidget);
-    expect(find.text('Offline guidance'), findsOneWidget);
+    expect(find.textContaining('Detailed offline help for app features'), findsOneWidget);
+    expect(find.textContaining('Live ChatGPT-style AI is not connected'), findsOneWidget);
   });
 
 
@@ -160,9 +161,12 @@ void main() {
       home: const AquaAiAssistantPage(accent: Color(0xFF20E4E8)),
     ));
 
+    expect(find.textContaining('Detailed offline help for app features'), findsOneWidget);
     await tester.tap(find.text('How do I allow storage access?'));
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('All files access settings page'), findsOneWidget);
+    expect(find.text('How do I allow storage access?'), findsOneWidget);
+    expect(find.textContaining('Allow storage access'), findsOneWidget);
+    expect(find.textContaining('Enable “Allow access to manage all files”'), findsOneWidget);
   });
 }
