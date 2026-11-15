@@ -2333,7 +2333,7 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
                     _sortMode = value;
                   }
                 }),
-                itemBuilder: (context) => const [
+                itemBuilder: (context) => [
                   PopupMenuItem(value: 'Name', child: Text(AppLanguage.text('Sort by name'))),
                   PopupMenuItem(value: 'Size', child: Text(AppLanguage.text('Sort by size'))),
                   PopupMenuItem(value: 'Date', child: Text(AppLanguage.text('Sort by date'))),
