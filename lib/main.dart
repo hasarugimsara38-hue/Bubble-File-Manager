@@ -1755,9 +1755,13 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
     var volume = 1.0;
     try {
       await _mediaAudioPlayer.stop();
-      await _mediaAudioPlayer.setSourceDeviceFile(file.path);
-      await _mediaAudioPlayer.setVolume(volume);
-      await _mediaAudioPlayer.resume();
+      // Start the selected local file through audioplayers' supported source API.
+      // Setting a source and calling resume() while the player is stopped can
+      // leave playback unstarted on some Android devices.
+      await _mediaAudioPlayer.play(
+        DeviceFileSource(file.path),
+        volume: volume,
+      );
       if (!mounted) return;
       await showModalBottomSheet<void>(
         context: context,
@@ -2544,14 +2548,18 @@ class _AquaAppState extends State<AquaApp> with WidgetsBindingObserver, SingleTi
                 return Padding(
                   padding: EdgeInsets.only(bottom: _viewMode == 'Compact' ? 3 : 7),
                   child: _glass(child: Row(children: [
-                    isFolder
-                      ? Icon(Icons.folder_rounded, color: _accent, size: 25)
-                      : MediaThumbnail(
-                          key: ValueKey(item.path),
-                          path: item.path,
-                          accent: _accent,
-                          size: _viewMode == 'Compact' ? 34 : 50,
-                        ),
+                    InkWell(
+                      onTap: () => _openEntity(item),
+                      borderRadius: BorderRadius.circular(13),
+                      child: isFolder
+                          ? Icon(Icons.folder_rounded, color: _accent, size: 25)
+                          : MediaThumbnail(
+                              key: ValueKey(item.path),
+                              path: item.path,
+                              accent: _accent,
+                              size: _viewMode == 'Compact' ? 34 : 50,
+                            ),
+                    ),
                     SizedBox(width: _viewMode == 'Compact' ? 7 : 11),
                     Expanded(child: InkWell(
                       onTap: () => _openEntity(item),
