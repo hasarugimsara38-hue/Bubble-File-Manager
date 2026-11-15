@@ -130,6 +130,27 @@ class _FaceAlbumsPageState extends State<FaceAlbumsPage> {
     return dot / (math.sqrt(normA) * math.sqrt(normB));
   }
 
+  // Compare the representative average and the closest saved sample.
+  double _clusterSimilarity(_PersonCluster cluster, List<double> embedding) {
+    if (cluster.samples.isEmpty) return -1;
+    final dimensions = embedding.length;
+    if (dimensions == 0 ||
+        cluster.samples.any((sample) => sample.length != dimensions)) {
+      return -1;
+    }
+    final centroid = List<double>.filled(dimensions, 0);
+    var bestSample = -1.0;
+    for (final sample in cluster.samples) {
+      for (var i = 0; i < dimensions; i++) {
+        centroid[i] += sample[i] / cluster.samples.length;
+      }
+      bestSample = math.max(bestSample, _cosine(sample, embedding)).toDouble();
+    }
+    final centroidScore = _cosine(centroid, embedding);
+    if (centroidScore < 0 || bestSample < 0) return -1;
+    return centroidScore * 0.7 + bestSample * 0.3;
+  }
+
   Future<void> _changeLanguage() async {
     final selected = await showAppLanguageDialog(context, accent: widget.accent);
     if (selected == null) return;
@@ -226,10 +247,9 @@ class _FaceAlbumsPageState extends State<FaceAlbumsPage> {
               var secondScore = -1.0;
               for (var i = 0; i < clusters.length; i++) {
                 final cluster = clusters[i];
-                var score = -1.0;
-                for (final sample in cluster.samples) {
-                  score = math.max(score, _cosine(sample, embedding)).toDouble();
-                }
+                // Never use two faces from one photograph to reinforce a cluster.
+                if (cluster.paths.contains(file.path)) continue;
+                final score = _clusterSimilarity(cluster, embedding);
                 if (score > bestScore) {
                   secondScore = bestScore;
                   bestScore = score;
@@ -243,7 +263,7 @@ class _FaceAlbumsPageState extends State<FaceAlbumsPage> {
                   bestScore >= _matchThreshold &&
                   (secondScore < 0 || bestScore - secondScore >= _minimumMatchMargin)) {
                 final cluster = clusters[bestIndex];
-                if (cluster.samples.length < 6) {
+                if (cluster.samples.length < 8) {
                   cluster.samples.add(List<double>.from(embedding));
                 }
                 if (!cluster.paths.contains(file.path)) {
