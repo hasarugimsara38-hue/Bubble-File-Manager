@@ -23,10 +23,12 @@ class AquaAdvancedTools extends StatefulWidget {
     super.key,
     required this.targetDirectory,
     required this.accent,
+    required this.onLanguageChanged,
     this.openVaultOnStart = false,
   });
   final Directory targetDirectory;
   final Color accent;
+  final Future<void> Function(String language) onLanguageChanged;
   final bool openVaultOnStart;
 
   @override
@@ -767,6 +769,7 @@ class _AquaAdvancedToolsState extends State<AquaAdvancedTools> {
           builder: (_) => LocationAlbumsPage(
             targetDirectory: widget.targetDirectory,
             accent: widget.accent,
+            onLanguageChanged: widget.onLanguageChanged,
           ),
         ));
       }),
@@ -823,6 +826,7 @@ class _AquaAdvancedToolsState extends State<AquaAdvancedTools> {
           builder: (_) => FaceAlbumsPage(
             targetDirectory: widget.targetDirectory,
             accent: widget.accent,
+            onLanguageChanged: widget.onLanguageChanged,
           ),
         ));
       }),
